@@ -30,7 +30,7 @@ This project uses **UV** as our Python package manager. UV is fast, reliable, an
 3. **Run the application**:
    ```bash
    # Start development environment
-   python scripts/dev-setup.py start
+   python scripts/dev-setup.py start # Other commands include [stop|reset|status]
 
    uv run python main.py
    ```
@@ -40,10 +40,13 @@ That's it! 🎉
 ## 📦 Essential UV Commands
 
 ### Running the Application
-First you'll need to setup the development environment with a PostgreSQL database and Redis. This is done easily by having Docker Desktop and running the dev-setup script inside the **/scripts** folder. 
+First you'll need to setup the development environment with a PostgreSQL database and Redis. This is done easily by having Docker Desktop and running the dev-setup script inside the **Backend/src/scripts** folder. 
 ```bash
-# Run dev-setup script
-python scripts/dev-setup.py start
+# Run dev-setup script (from root)
+python backend/src/scripts/dev-setup.py start
+
+# Navigate to folder path
+cd Backend/src/
 
 # Start the FastAPI server
 uv run python main.py
@@ -77,12 +80,15 @@ uv run black .
 
 # Check what's installed
 uv pip list
+
+# dev-script commands (from root)
+python backend/src/scripts/dev-setup.py [start|stop|reset|status]
 ```
 
 ### Working with the Environment
 ```bash
-# Stopping Docker and the containers
-python scripts/dev-setup.py stop
+# Stopping Docker and the containers (from root)
+python backend/src/scripts/dev-setup.py stop
 
 # Sync dependencies (after git pull)
 uv sync
@@ -138,14 +144,65 @@ git diff HEAD~1 uv.lock  # See what packages were added/updated
 ## 📚 Project Structure
 ***To be updated...***
 ```
-src/
+Backend/src/
 ├── app/
-│   ├── api/           # FastAPI routes
-│   ├── database/      # Database setup
-│   └── models/        # Database models, ML models
-├── main.py            # Application entry point
-├── pyproject.toml     # Project configuration
-└── uv.lock           # Exact dependency versions
+│   ├── domain/                    # 🏛️ Domain Models (Business Entities)
+│   │   ├── __init__.py
+│   │   ├── player.py              # Player domain entity (@dataclass)
+│   │   ├── video.py               # Video domain entity
+│   │   ├── match.py               # Match and related entities
+│   │   └── analysis.py            # Analysis domain entity
+│   │
+│   ├── data/                      # 💾 Data Access Layer
+│   │   ├── models/                # SQLAlchemy ORM Models
+│   │   │   ├── __init__.py        # Imports all models for relationship resolution
+│   │   │   ├── base.py            # Base SQLAlchemy declarative class
+│   │   │   ├── player_model.py    # Player database model
+│   │   │   ├── video_model.py     # Video database model
+│   │   │   ├── match_model.py     # Match and related database models
+│   │   │   └── analysis_model.py  # Analysis database model
+│   │   ├── repositories/          # Repository Pattern Implementation
+│   │   │   ├── __init__.py
+│   │   │   ├── base_repository.py # Generic base repository with CRUD
+│   │   │   ├── player_repository.py
+│   │   │   ├── video_repository.py
+│   │   │   ├── match_repository.py
+│   │   │   └── analysis_repository.py
+│   │   └── connection.py          # Database session management
+│   │
+│   ├── business/                  # ⚙️ Business Logic Layer
+│   │   ├── services/              # Business logic implementation
+│   │   │   ├── __init__.py
+│   │   │   ├── player_service.py  # Player business logic
+│   │   │   ├── video_service.py   # Video processing logic
+│   │   │   ├── match_service.py   # Match management logic
+│   │   │   └── analysis_service.py # Analysis business logic
+│   │   └── exceptions.py          # Business-specific exceptions
+│   │
+│   ├── presentation/              # 🌐 Presentation Layer (API)
+│   │   ├── dtos/                  # Data Transfer Objects (Pydantic)
+│   │   │   ├── __init__.py
+│   │   │   ├── player_dto.py      # Player API contracts
+│   │   │   ├── video_dto.py       # Video API contracts
+│   │   │   ├── match_dto.py       # Match API contracts
+│   │   │   └── analysis_dto.py    # Analysis API contracts
+│   │   └── controllers/           # FastAPI Controllers
+│   │       ├── __init__.py
+│   │       ├── player_controller.py    # Player endpoints
+│   │       ├── video_controller.py     # Video endpoints
+│   │       ├── match_controller.py     # Match endpoints
+│   │       └── analysis_controller.py  # Analysis endpoints
+│   │
+│   ├── main.py                    # FastAPI app initialization
+│   └── config.py                  # Application configuration
+│
+├── scripts/
+│   └── dev-setup.py               # Development environment setup
+│
+├── main.py                        # Application entry point
+├── pyproject.toml                 # Project dependencies and configuration
+├── .env                          # Environment variables
+└── uv.lock                       # Exact dependency versions
 ```
 
 ---
