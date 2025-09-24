@@ -8,8 +8,8 @@ class MatchModel(Base):
     __tablename__ = "matches"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     match_players: Mapped[List["MatchPlayerModel"]] = relationship("MatchPlayerModel", back_populates="match")
@@ -20,9 +20,9 @@ class MatchPlayerModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), nullable=False)
-    player_identifier: Mapped[str] = mapped_column(String(20), nullable=False)  # "player_0", etc.
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    player_identifier: Mapped[str] = mapped_column(String(20), nullable=False)  # "player_1", etc.
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     match: Mapped["MatchModel"] = relationship("MatchModel", back_populates="match_players")
@@ -35,8 +35,8 @@ class SummaryMetricsModel(Base):
     match_player_id: Mapped[int] = mapped_column(ForeignKey("match_players.id"), nullable=False)
     total_hits: Mapped[int] = mapped_column(Integer, nullable=False)
     total_rallies: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     match_player: Mapped["MatchPlayerModel"] = relationship("MatchPlayerModel", back_populates="summary_metrics")
@@ -51,8 +51,8 @@ class HitsModel(Base):
     summary_metrics_id: Mapped[int] = mapped_column(ForeignKey("summary_metrics.id"), nullable=False)
     hit_errors: Mapped[int] = mapped_column(Integer, nullable=False)
     overhead_hits: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     summary_metrics: Mapped["SummaryMetricsModel"] = relationship("SummaryMetricsModel", back_populates="hits")
@@ -64,8 +64,8 @@ class RallyModel(Base):
     summary_metrics_id: Mapped[int] = mapped_column(ForeignKey("summary_metrics.id"), nullable=False)
     hits: Mapped[int] = mapped_column(Integer, nullable=False)
     length_in_time: Mapped[float] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     summary_metrics: Mapped["SummaryMetricsModel"] = relationship("SummaryMetricsModel", back_populates="rallies")
@@ -78,8 +78,8 @@ class HeatmapModel(Base):
     offensive_zone_time: Mapped[float] = mapped_column(nullable=False)
     defensive_zone_time: Mapped[float] = mapped_column(nullable=False)
     transition_zone_time: Mapped[float] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     summary_metrics: Mapped["SummaryMetricsModel"] = relationship("SummaryMetricsModel", back_populates="heatmap")
@@ -93,8 +93,8 @@ class HeatmapCoordModel(Base):
     x_coord: Mapped[float] = mapped_column(nullable=False)
     y_coord: Mapped[float] = mapped_column(nullable=False)
     intensity: Mapped[float] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     heatmap: Mapped["HeatmapModel"] = relationship("HeatmapModel", back_populates="coordinates")

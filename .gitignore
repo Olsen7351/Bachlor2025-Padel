@@ -211,3 +211,6 @@ __marimo__/
 # Database
 *.db
 
+# Firebase service account
+firebase-service-account.json
+**/firebase-service-account.json

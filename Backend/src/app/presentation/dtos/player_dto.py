@@ -4,14 +4,14 @@ from typing import Optional
 
 class PlayerCreateRequest(BaseModel):
     """DTO for creating a player"""
+    id: Optional[str] = None  # Firebase ID can be provided
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
-    password: str = Field(..., min_length=6)
     role: Optional[str] = "player"
 
 class PlayerResponse(BaseModel):
     """DTO for player response"""
-    id: int
+    id: str
     name: str
     email: str
     role: str

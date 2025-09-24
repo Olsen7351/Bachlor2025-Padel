@@ -1,15 +1,23 @@
-class BusinessLogicException(Exception):
-    """Base exception for business logic errors"""
+class PlayerAlreadyExistsException(Exception):
+    """Raised when trying to create a player that already exists"""
     pass
 
-class PlayerAlreadyExistsException(BusinessLogicException):
-    """Raised when trying to create a player with existing email"""
+class PlayerNotFoundException(Exception):
+    """Raised when a player is not found"""
     pass
 
-class PlayerNotFoundException(BusinessLogicException):
-    """Raised when player is not found"""
+class ValidationException(Exception):
+    """Raised when validation fails"""
     pass
 
-class ValidationException(BusinessLogicException):
-    """Raised when domain validation fails"""
+class AnalysisNotFoundException(Exception):
+    """Raised when an analysis is not found"""
+    pass
+
+class VideoNotFoundException(Exception):
+    """Raised when a video is not found"""
+    pass
+
+class AuthenticationException(Exception):
+    """Raised when authentication fails"""
     pass
