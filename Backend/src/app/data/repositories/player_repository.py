@@ -1,11 +1,11 @@
 from typing import Optional, List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from .base_repository import BaseRepository
+from .interfaces import IPlayerRepository
 from ..models.player_model import PlayerModel
 from ...domain.player import Player
 
-class PlayerRepository(BaseRepository[Player, PlayerModel]):
+class PlayerRepository(IPlayerRepository):
     """Repository for Player domain entities"""
     
     def __init__(self, session: AsyncSession):

@@ -214,3 +214,7 @@ __marimo__/
 # Firebase service account
 firebase-service-account.json
 **/firebase-service-account.json
+
+# Mac OS generated files
+.DS_Store
+*.DS_Store

@@ -142,10 +142,15 @@ git diff HEAD~1 uv.lock  # See what packages were added/updated
 ```
 
 ## 📚 Project Structure
-***To be updated...***
+***To be updated... (estimate for final structure thus far)***
 ```
 Backend/src/
 ├── app/
+│   ├── auth/                      # 🔐 Authentication Layer (Firebase)
+│   │   ├── __init__.py
+│   │   ├── firebase_service.py    # Firebase Admin SDK integration
+│   │   └── dependencies.py        # Auth dependencies (get_current_user, etc.)
+│   │
 │   ├── domain/                    # 🏛️ Domain Models (Business Entities)
 │   │   ├── __init__.py
 │   │   ├── player.py              # Player domain entity (@dataclass)
@@ -163,6 +168,7 @@ Backend/src/
 │   │   │   └── analysis_model.py  # Analysis database model
 │   │   ├── repositories/          # Repository Pattern Implementation
 │   │   │   ├── __init__.py
+│   │   │   ├── interfaces.py      # Repository interfaces (IPlayerRepository, etc.)
 │   │   │   ├── base_repository.py # Generic base repository with CRUD
 │   │   │   ├── player_repository.py
 │   │   │   ├── video_repository.py
@@ -173,6 +179,7 @@ Backend/src/
 │   ├── business/                  # ⚙️ Business Logic Layer
 │   │   ├── services/              # Business logic implementation
 │   │   │   ├── __init__.py
+│   │   │   ├── interfaces.py      # Service interfaces (IPlayerService, etc.)
 │   │   │   ├── player_service.py  # Player business logic
 │   │   │   ├── video_service.py   # Video processing logic
 │   │   │   ├── match_service.py   # Match management logic
@@ -182,27 +189,47 @@ Backend/src/
 │   ├── presentation/              # 🌐 Presentation Layer (API)
 │   │   ├── dtos/                  # Data Transfer Objects (Pydantic)
 │   │   │   ├── __init__.py
+│   │   │   ├── auth_dto.py        # Auth API contracts (Register, Login, etc.)
 │   │   │   ├── player_dto.py      # Player API contracts
 │   │   │   ├── video_dto.py       # Video API contracts
 │   │   │   ├── match_dto.py       # Match API contracts
 │   │   │   └── analysis_dto.py    # Analysis API contracts
 │   │   └── controllers/           # FastAPI Controllers
 │   │       ├── __init__.py
+│   │       ├── auth_controller.py      # Auth endpoints (register, login, /me)
 │   │       ├── player_controller.py    # Player endpoints
 │   │       ├── video_controller.py     # Video endpoints
 │   │       ├── match_controller.py     # Match endpoints
 │   │       └── analysis_controller.py  # Analysis endpoints
 │   │
 │   ├── main.py                    # FastAPI app initialization
-│   └── config.py                  # Application configuration
+│   └── config.py                  # Application configuration (Pydantic Settings)
+│
+├── tests/                         # 🧪 Test Suite
+│   ├── __init__.py
+│   ├── conftest.py                # Shared pytest fixtures
+│   ├── unit/                      # Unit tests (mocked dependencies)
+│   │   ├── __init__.py
+│   │   ├── business/              # Service layer tests
+│   │   │   ├── __init__.py
+│   │   │   └── test_player_service.py  # UC-09 tests
+│   │   ├── data/                  # Repository tests (future)
+│   │   │   └── __init__.py
+│   │   └── presentation/          # Controller tests
+│   │       ├── __init__.py
+│   │       └── test_auth_controller.py # UC-00, UC-09 controller tests
+│   └── integration/               # Integration tests (future)
+│       └── __init__.py
 │
 ├── scripts/
 │   └── dev-setup.py               # Development environment setup
 │
 ├── main.py                        # Application entry point
+├── pytest.ini                     # Pytest configuration
 ├── pyproject.toml                 # Project dependencies and configuration
-├── .env                          # Environment variables
-└── uv.lock                       # Exact dependency versions
+├── .env                          # Environment variables (not tracked)
+├── .gitignore                     # Git ignore rules
+└── uv.lock                       # Exact dependency versions (tracked)
 ```
 
 ---

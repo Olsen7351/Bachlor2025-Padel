@@ -19,7 +19,7 @@ async def get_player_service(session: AsyncSession = Depends(get_db_session)) ->
 @router.get("/{player_id}", response_model=PlayerResponse)
 async def get_player(
     player_id: str,
-    current_user: AuthenticatedUser = Depends(get_current_user),  # Now requires auth
+    current_user: AuthenticatedUser = Depends(get_current_user),  # Requires auth
     player_service: PlayerService = Depends(get_player_service)
 ):
     """Get player by ID (requires authentication)"""
@@ -42,7 +42,7 @@ async def get_player(
 
 @router.get("/", response_model=List[PlayerResponse])
 async def list_players(
-    current_user: AuthenticatedUser = Depends(get_current_user),  # Now requires auth
+    current_user: AuthenticatedUser = Depends(get_current_user),  # Requires auth
     player_service: PlayerService = Depends(get_player_service)
 ):
     """Get all players (requires authentication)"""

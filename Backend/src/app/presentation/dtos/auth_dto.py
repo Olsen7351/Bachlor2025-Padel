@@ -1,24 +1,31 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from .player_dto import PlayerResponse
 
 class RegisterRequest(BaseModel):
     """DTO for user registration after Firebase auth"""
-    name: str
-    
-    class Config:
+    name: str = Field(
+        ...,
+        min_length=1, 
+        max_length=100, 
+        description="Player name"
+        )
+
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "name": "John Doe"
             }
         }
+    )
+        
 
 class LoginResponse(BaseModel):
     """DTO for successful login response"""
     message: str
     user: PlayerResponse
     
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "message": "Login successful",
@@ -32,20 +39,5 @@ class LoginResponse(BaseModel):
                 }
             }
         }
+    )
 
-class AuthUserInfo(BaseModel):
-    """DTO for current user info"""
-    uid: str
-    email: str
-    email_verified: bool
-    name: Optional[str] = None
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "uid": "firebase-uid-123",
-                "email": "john@example.com", 
-                "email_verified": True,
-                "name": "John Doe"
-            }
-        }

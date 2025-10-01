@@ -1,6 +1,7 @@
 import os
 from functools import lru_cache
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 
 
@@ -35,6 +36,12 @@ class Settings(BaseSettings):
     # CORS Settings
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
+    model_config = ConfigDict(
+        env_file = ".env",
+        case_sensitive = False,
+        extra = "ignore" # This prevents the "extra inputs not permitted" error
+    )
+
     # Docker health check
     def is_database_available(self) -> bool:
         """Check if database is available"""
@@ -62,13 +69,6 @@ class Settings(BaseSettings):
         ]
         
         return all(field is not None and field.strip() != "" for field in required_fields)
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-        # Allow extra fields in case we have other env vars
-        extra = "ignore"  # This prevents the "extra inputs not permitted" error
-
 
 @lru_cache()
 def get_settings() -> Settings:
