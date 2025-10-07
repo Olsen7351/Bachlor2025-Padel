@@ -211,3 +211,5 @@ __marimo__/
 # Database
 *.db
 
+ML-Models/Frames/
+ML-Models/Output/
