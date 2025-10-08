@@ -8,9 +8,11 @@ dependencies = [
     "asyncpg>=0.30.0",
     "email-validator>=2.3.0",
     "fastapi>=0.116.1",
+    "firebase-admin>=7.1.0",
     "greenlet>=3.2.4",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
+    "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
@@ -21,4 +23,5 @@ dev = [
     "black>=25.1.0",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.0.0"
 ]
