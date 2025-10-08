@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+    --font-sans: "Exo 2", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    html { @apply font-sans; }
+}
