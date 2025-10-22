@@ -50,7 +50,7 @@ class TestLoginEndpoint:
         
         # Act
         result = await login(
-            current_user=authenticated_user,
+            firebase_user=authenticated_user,
             player_service=mock_player_service
         )
         
@@ -79,7 +79,7 @@ class TestLoginEndpoint:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             await login(
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         
@@ -99,7 +99,7 @@ class TestLoginEndpoint:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             await login(
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         
@@ -135,7 +135,7 @@ class TestGetCurrentUserEndpoint:
         
         # Act
         result = await get_current_user_info(
-            current_user=authenticated_user,
+            firebase_user=authenticated_user,
             player_service=mock_player_service
         )
         
@@ -158,7 +158,7 @@ class TestGetCurrentUserEndpoint:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user_info(
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         
@@ -178,7 +178,7 @@ class TestGetCurrentUserEndpoint:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user_info(
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         
@@ -228,7 +228,7 @@ class TestRegisterEndpoint:
         # Act
         result = await register(
             request=register_request,
-            current_user=authenticated_user,
+            firebase_user=authenticated_user,
             player_service=mock_player_service
         )
         
@@ -264,7 +264,7 @@ class TestRegisterEndpoint:
         with pytest.raises(HTTPException) as exc_info:
             await register(
                 request=register_request,
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         
@@ -290,7 +290,7 @@ class TestRegisterEndpoint:
         with pytest.raises(HTTPException) as exc_info:
             await register(
                 request=register_request,
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         
@@ -313,7 +313,7 @@ class TestRegisterEndpoint:
         with pytest.raises(HTTPException) as exc_info:
             await register(
                 request=register_request,
-                current_user=authenticated_user,
+                firebase_user=authenticated_user,
                 player_service=mock_player_service
             )
         

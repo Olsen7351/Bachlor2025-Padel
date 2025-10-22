@@ -2,42 +2,64 @@
 
 A Python-based system for analyzing padel match videos using machine learning.
 
-## 🚀 Quick Start with UV
+## Quick Start with UV
 
 This project uses **UV** as our Python package manager. UV is fast, reliable, and handles virtual environments automatically.
 
 ### First Time Setup
 
 1. **Install UV** (if you don't have it):
-   ```bash
+```bash
    # macOS/Linux
    brew install uv
    
    # Windows
    winget install --id=astral-sh.uv -e
+```
 
-   # Docker Desktop
-   Install Docker Desktop: https://www.docker.com/products/docker-desktop/
-   ```
+2. **Install Docker Desktop**:
+   - Download and install from: https://www.docker.com/products/docker-desktop/
 
-2. **Clone and setup the project**:
-   ```bash
+3. **Install ffmpeg** (required for video processing):
+```bash
+   # macOS
+   brew install ffmpeg
+   
+   # Ubuntu/Debian/WSL
+   sudo apt-get update && sudo apt-get install ffmpeg
+   
+   # Windows
+   winget install ffmpeg
+```
+   
+   Verify installation:
+```bash
+   ffprobe -version
+```
+
+4. **Clone and setup the project**:
+```bash
    git clone https://github.com/Olsen7351/Bachlor2025-Padel.git
    cd Backend/src
    uv sync  # Installs all dependencies and creates virtual environment
-   ```
+```
 
-3. **Run the application**:
-   ```bash
-   # Start development environment
-   python scripts/dev-setup.py start # Other commands include [stop|reset|status]
+5. **Run the application**:
+```bash
+   # Start development environment (databases only)
+   python scripts/dev-setup.py start  # Other commands: [stop|reset|status]
 
+   # Run the FastAPI application
    uv run python main.py
-   ```
+```
 
-That's it! 🎉
+The API will be available at:
+- **API Docs**: http://localhost:8000/docs
+- **API**: http://localhost:8000
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
 
-## 📦 Essential UV Commands
+## Essential UV Commands
 
 ### Running the Application
 First you'll need to setup the development environment with a PostgreSQL database and Redis. This is done easily by having Docker Desktop and running the dev-setup script inside the **Backend/src/scripts** folder. 
@@ -97,7 +119,7 @@ uv sync
 uv add sqlalchemy
 ```
 
-## 🔄 Team Workflow
+## Team Workflow
 
 ### When someone adds a new dependency:
 1. They run: `uv add package-name`
@@ -109,20 +131,20 @@ uv add sqlalchemy
 2. Commit: `pyproject.toml` and `uv.lock`
 3. Push your changes
 
-## 🚫 What NOT to Commit
+## What NOT to Commit
 
 - `.venv/` folder (virtual environment - auto-generated)
 - `__pycache__/` folders
 - `.env` files (secrets and local config)
 
-## 💡 Why UV?
+## Why UV?
 
 - **Fast**: Much faster than pip
 - **Reliable**: Lock file ensures everyone has identical dependencies
 - **Simple**: Handles virtual environments automatically
 - **Modern**: Built-in support for modern Python packaging
 
-## 🆘 Common Issues
+## Common Issues
 
 **Environment issues?**
 ```bash
@@ -141,7 +163,7 @@ uv sync
 git diff HEAD~1 uv.lock  # See what packages were added/updated
 ```
 
-## 📚 Project Structure
+## Project Structure
 ***To be updated... (estimate for final structure thus far)***
 ```
 Backend/src/
