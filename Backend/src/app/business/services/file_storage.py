@@ -6,10 +6,11 @@ from datetime import datetime
 import uuid
 
 from ...business.exceptions import StorageException
+from ...business.services.interfaces import IFileStorageService
 from ...config import get_settings
 
 
-class FileStorageService:
+class FileStorageService(IFileStorageService):
     """Service for handling file storage operations - follows Single Responsibility Principle"""
     
     def __init__(self, base_storage_path: str = None):

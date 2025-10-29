@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Optional, BinaryIO
+from typing import Optional, BinaryIO, Tuple
+from pathlib import Path
 from ...domain.player import Player
 from ...domain.video import Video, VideoStatus
 
@@ -86,4 +87,41 @@ class IVideoService(ABC):
     @abstractmethod
     async def delete_video(self, video_id: int) -> bool:
         """Soft delete a video"""
+        pass
+
+
+class IFileStorageService(ABC):
+    """
+    Interface for file storage operations
+    Following Dependency Inversion Principle
+    """
+    
+    @abstractmethod
+    async def save_video(
+        self, 
+        file: BinaryIO, 
+        original_filename: str, 
+        player_id: str
+    ) -> Tuple[str, str]:
+        """
+        Save video file to storage
+        
+        Returns:
+            Tuple of (storage_path, stored_filename)
+        """
+        pass
+    
+    @abstractmethod
+    async def delete_video(self, storage_path: str) -> bool:
+        """Delete video file from storage"""
+        pass
+    
+    @abstractmethod
+    def get_file_path(self, storage_path: str) -> Path:
+        """Get absolute path for a stored file"""
+        pass
+    
+    @abstractmethod
+    def file_exists(self, storage_path: str) -> bool:
+        """Check if file exists in storage"""
         pass

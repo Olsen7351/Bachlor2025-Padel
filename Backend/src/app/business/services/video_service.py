@@ -4,8 +4,7 @@ from datetime import datetime
 import ffmpeg
 
 from ...domain.video import Video, VideoStatus
-from ...business.services.interfaces import IVideoService
-from ...business.services.file_storage import FileStorageService
+from ...business.services.interfaces import IVideoService, IFileStorageService
 from ...data.repositories.interfaces import IVideoRepository
 from ...business.exceptions import (
     InvalidFileFormatException,
@@ -25,14 +24,14 @@ class VideoService(IVideoService):
     def __init__(
         self, 
         video_repository: IVideoRepository,
-        file_storage_service: FileStorageService
+        file_storage_service: IFileStorageService
     ):
         """
         Initialize service with dependencies (Dependency Inversion Principle)
         
         Args:
             video_repository: Repository interface for video data access
-            file_storage_service: Service for file storage operations
+            file_storage_service: Storage service interface for file operations
         """
         self._video_repository = video_repository
         self._file_storage = file_storage_service
