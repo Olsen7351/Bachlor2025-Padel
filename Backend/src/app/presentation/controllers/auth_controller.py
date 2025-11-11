@@ -8,7 +8,7 @@ from ...data.repositories.player_repository import PlayerRepository
 from ...business.services.interfaces import IPlayerService
 from ...business.services.player_service import PlayerService
 from ...business.exceptions import PlayerAlreadyExistsException, ValidationException, PlayerNotFoundException
-from ...auth.dependencies import get_current_user, AuthenticatedUser
+from ...auth.dependencies import get_current_user, get_firebase_user, AuthenticatedUser
 from ..dtos.auth_dto import RegisterRequest, LoginResponse
 from ..dtos.player_dto import PlayerResponse
 from firebase_admin import auth as firebase_auth
@@ -29,7 +29,7 @@ async def get_player_service(
 @router.post("/register", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     request: RegisterRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
     player_service: IPlayerService = Depends(get_player_service)
 ):
     """
@@ -41,7 +41,7 @@ async def register(
     1. Frontend: Create user in Firebase (email + password)
     2. Frontend: Get Firebase ID token
     3. Frontend: Call this endpoint with token + name
-    4. Backend: Verify token (extracts email + UID)
+    4. Backend: Verify token (extracts email + UID) - NO DATABASE LOOKUP
     5. Backend: Create user in database with Firebase data + provided name
     
     Validation (UC-09 Failure Scenarios):
@@ -54,10 +54,10 @@ async def register(
         # Email and UID come from the verified Firebase token
         # We trust Firebase more than frontend input for these
         player = await player_service.create_player(
-            id=current_user.uid,        # From Firebase token
-            name=request.name,          # From request body
-            email=current_user.email,   # From Firebase token
-            role="player"               # Default role
+            id=firebase_user.uid,        # From Firebase token
+            name=request.name,           # From request body
+            email=firebase_user.email,   # From Firebase token
+            role="player"                # Default role
         )
         
         return PlayerResponse(
@@ -89,7 +89,7 @@ async def register(
     
 @router.post("/login", response_model=LoginResponse)
 async def login(
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
     player_service: IPlayerService = Depends(get_player_service)
 ):
     """Login endpoint - verifies Firebase token and returns user info
@@ -101,18 +101,18 @@ async def login(
     2. Frontend: Authenticate with Firebase (signInWithEmailAndPassword)
     3. Frontend: Get Firebase ID token
     4. Frontend: Call this endpoint with token
-    5. Backend: Verify token (handled by get_current_user dependency)
+    5. Backend: Verify token (handled by get_firebase_user dependency)
     6. Backend: Return user data from database
 
     Failure Scenarios (UC-00):
     - F1: Wrong password - handled by Firebase
     - F2: User not in Firebase - handled by Firebase
     - F3: User in Firebase but not in the backend DB - handled here (404)
-    - F4: Invalid/expired token - handled by get_current_user (401)
+    - F4: Invalid/expired token - handled by get_firebase_user (401)
     """
     try:
         # Get user from database using Firebase UID
-        player = await player_service.get_player_by_id(current_user.uid)
+        player = await player_service.get_player_by_id(firebase_user.uid)
 
         return LoginResponse(
             message="Login successful",
@@ -140,7 +140,7 @@ async def login(
     
 @router.get("/me", response_model=PlayerResponse)
 async def get_current_user_info(
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
     player_service: IPlayerService = Depends(get_player_service)
 ):
     """
@@ -153,11 +153,11 @@ async def get_current_user_info(
 
     Returns:
     - 200: User profile data
-    - 401: Invalid/expired token (handled by get_current_user)
+    - 401: Invalid/expired token (handled by get_firebase_user)
     - 404: User not found in database
     """
     try:
-        player = await player_service.get_player_by_id(current_user.uid)
+        player = await player_service.get_player_by_id(firebase_user.uid)
 
         return PlayerResponse(
             id=player.id,

@@ -5,9 +5,11 @@ description = "Bachelor Project 2025/2026"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiofiles>=24.1.0",
     "asyncpg>=0.30.0",
     "email-validator>=2.3.0",
     "fastapi>=0.116.1",
+    "ffmpeg-python>=0.2.0",
     "firebase-admin>=7.1.0",
     "greenlet>=3.2.4",
     "pydantic>=2.11.7",

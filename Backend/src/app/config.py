@@ -21,9 +21,14 @@ class Settings(BaseSettings):
     api_title: str = "Padel Analyzer API"
     api_version: str = "0.1.0"
 
-    # File Uploads
+    # File Uploads - General
     upload_dir: str = "uploads"
-    max_file_size: int = 100 * 1024 * 1024  # 100MB
+    max_file_size: int = 100 * 1024 * 1024  # 100MB (legacy - kept for compatibility)
+
+    # Video Upload Settings
+    video_upload_dir: str = "uploads/videos"
+    video_max_file_size_mb: int = 2000  # 2 GB - allows 10-15 min videos at 1080p
+    video_allowed_formats: list[str] = ["mp4", "avi", "mov", "mkv", "webm"]
 
     # Firebase Configuration
     firebase_project_id: Optional[str] = None
@@ -39,8 +44,14 @@ class Settings(BaseSettings):
     model_config = ConfigDict(
         env_file = ".env",
         case_sensitive = False,
-        extra = "ignore" # This prevents the "extra inputs not permitted" error
+        extra = "ignore"
     )
+
+    # Helper properties
+    @property
+    def video_max_file_size_bytes(self) -> int:
+        """Get video max file size in bytes"""
+        return self.video_max_file_size_mb * 1024 * 1024
 
     # Docker health check
     def is_database_available(self) -> bool:
@@ -69,6 +80,7 @@ class Settings(BaseSettings):
         ]
         
         return all(field is not None and field.strip() != "" for field in required_fields)
+
 
 @lru_cache()
 def get_settings() -> Settings:
