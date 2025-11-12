@@ -1,6 +1,6 @@
 """Video controller - Presentation layer (FastAPI endpoints)"""
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
@@ -62,8 +62,10 @@ def get_video_service(session: AsyncSession = Depends(get_db_session)) -> VideoS
 )
 async def upload_video(
     file: Annotated[UploadFile, File(description="Video file to upload")],
+    background_tasks: BackgroundTasks,
     current_user: Player = Depends(get_current_user),
-    video_service: VideoService = Depends(get_video_service)
+    video_service: VideoService = Depends(get_video_service),
+    session: AsyncSession = Depends(get_db_session)
 ) -> VideoUploadResponse:
     """
     UC-01: Upload video file
@@ -73,6 +75,9 @@ async def upload_video(
     - File storage
     - Database record creation
     - Success and failure scenarios from UC-01
+
+    Triggers:
+    - New analysis
     """
     
     # Validate that a file was uploaded
@@ -97,6 +102,15 @@ async def upload_video(
             player_id=current_user.id
         )
         
+        await session.commit()
+
+        # Trigger analysis in background
+        background_tasks.add_task(
+            process_video_analysis,
+            video_id=video.id,
+            player_id=current_user.id
+        )
+
         # Map domain entity to DTO
         return VideoUploadResponse(
             id=video.id,
@@ -141,6 +155,7 @@ async def upload_video(
     
     except Exception as e:
         # Unexpected errors
+        await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -164,4 +179,87 @@ async def get_upload_config(
         "max_file_size_mb": video_service.get_max_file_size_mb(),
         "allowed_formats": video_service.get_allowed_formats(),
         "description": "Upload configuration for video files"
+    }
+
+async def process_video_analysis(video_id: int, player_id: str):
+    """Background task to create analysis and run ML model"""
+    from app.data.connection import get_db_session
+    from app.data.repositories.analysis_repository import AnalysisRepository
+    from app.data.repositories.match_repository import (
+        MatchRepository, MatchPlayerRepository
+    )
+    from app.data.repositories.summary_metrics_repository import SummaryMetricsRepository
+    from app.data.repositories.video_repository import VideoRepository
+    from app.business.services.analysis_service import AnalysisService
+    import asyncio
+    
+    # Get database session
+    async for session in get_db_session():
+        try:
+            # Create repositories
+            analysis_repo = AnalysisRepository(session)
+            match_repo = MatchRepository(session)
+            match_player_repo = MatchPlayerRepository(session)
+            metrics_repo = SummaryMetricsRepository(session)
+            video_repo = VideoRepository(session)
+            
+            # Create analysis service
+            analysis_service = AnalysisService(
+                analysis_repo,
+                match_repo,
+                match_player_repo,
+                metrics_repo,
+                video_repo
+            )
+            
+            # Step 1: Create analysis entity chain
+            analysis = await analysis_service.create_analysis_for_video(
+                video_id=video_id,
+                player_id=player_id
+            )
+            
+            # Step 2: Run AI analysis (mock for now)
+            ai_results = await run_mock_ai_analysis(video_id)
+            
+            # Step 3: Store results
+            await analysis_service.store_analysis_results(
+                match_id=analysis.match_id,
+                ai_results=ai_results
+            )
+            
+            # Step 4: Mark as complete
+            await analysis_service.complete_analysis(video_id, success=True)
+            
+            # Commit transaction
+            await session.commit()
+            
+        except Exception as e:
+            print(f"Analysis failed for video {video_id}: {str(e)}")
+            try:
+                await analysis_service.complete_analysis(
+                    video_id, 
+                    success=False
+                )
+                await session.commit()
+            except:
+                await session.rollback()
+
+
+async def run_mock_ai_analysis(video_id: int) -> dict:
+    """
+    Mock AI analysis - REPLACE THIS with real ML model later
+    Returns fake hit counts for testing
+    """
+    import asyncio
+    import random
+    
+    # Simulate AI processing time (2 seconds)
+    await asyncio.sleep(2)
+    
+    # Return mock results
+    return {
+        "player_1": {"hits": random.randint(200, 250), "rallies": 45},
+        "player_2": {"hits": random.randint(200, 250), "rallies": 45},
+        "player_3": {"hits": random.randint(180, 230), "rallies": 45},
+        "player_4": {"hits": random.randint(180, 230), "rallies": 45}
     }
