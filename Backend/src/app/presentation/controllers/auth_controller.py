@@ -9,7 +9,7 @@ from ...business.services.interfaces import IPlayerService
 from ...business.services.player_service import PlayerService
 from ...business.exceptions import PlayerAlreadyExistsException, ValidationException, PlayerNotFoundException
 from ...auth.dependencies import get_current_user, get_firebase_user, AuthenticatedUser
-from ..dtos.auth_dto import RegisterRequest, LoginResponse
+from ..dtos.auth_dto import LoginResponse
 from ..dtos.player_dto import PlayerResponse
 from firebase_admin import auth as firebase_auth
 from app.config import get_settings

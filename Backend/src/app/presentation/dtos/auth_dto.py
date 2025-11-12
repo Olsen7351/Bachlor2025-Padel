@@ -1,25 +1,7 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, ConfigDict
 from .player_dto import PlayerResponse
 
-class RegisterRequest(BaseModel):
-    """DTO for user registration after Firebase auth"""
-    name: str = Field(
-        ...,
-        min_length=1, 
-        max_length=100, 
-        description="Player name"
-        )
-
-    model_config = ConfigDict(
-        json_schema_extra = {
-            "example": {
-                "name": "John Doe"
-            }
-        }
-    )
         
-
 class LoginResponse(BaseModel):
     """DTO for successful login response"""
     message: str
