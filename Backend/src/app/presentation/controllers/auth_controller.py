@@ -26,41 +26,112 @@ async def get_player_service(
     player_repository: IPlayerRepository = PlayerRepository(session)
     return PlayerService(player_repository)
 
-@router.post("/register", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
-async def register(
-    request: RegisterRequest,
-    firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
+# @router.post("/register", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
+# async def register(
+#     request: RegisterRequest,
+#     firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
+#     player_service: IPlayerService = Depends(get_player_service)
+# ):
+#     """
+#     Complete registration after Firebase user creation
+    
+#     Implements UC-09: Player Registration
+
+#     Registration Flow:
+#     1. Frontend: Create user in Firebase (email + password)
+#     2. Frontend: Get Firebase ID token
+#     3. Frontend: Call this endpoint with token + name
+#     4. Backend: Verify token (extracts email + UID) - NO DATABASE LOOKUP
+#     5. Backend: Create user in database with Firebase data + provided name
+    
+#     Validation (UC-09 Failure Scenarios):
+#     - F4: Name cannot be empty or whitespace only (validated in DTO)
+#     - F5: Name max 100 characters (validated in DTO)
+#     - F6: Player cannot already exist in database
+#     - F7: Token must be valid
+#     """
+#     try:
+#         # Email and UID come from the verified Firebase token
+#         # We trust Firebase more than frontend input for these
+#         player = await player_service.create_player(
+#             id=firebase_user.uid,        # From Firebase token
+#             name=request.name,           # From request body
+#             email=firebase_user.email,   # From Firebase token
+#             role="player"                # Default role
+#         )
+        
+#         return PlayerResponse(
+#             id=player.id,
+#             name=player.name,
+#             email=player.email,
+#             role=player.role,
+#             created_at=player.created_at,
+#             updated_at=player.updated_at
+#         )
+        
+#     except PlayerAlreadyExistsException as e:
+#         # F6: Player already exists in database
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Profile already exists. Please use login instead."
+#         )
+#     except ValidationException as e:
+#         # F4, F5: Validation errors
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail=str(e)
+#         )
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Registration failed. Please try again later."
+#         )
+    
+@router.post("/login", response_model=LoginResponse)
+async def login(
+    firebase_user: AuthenticatedUser = Depends(get_firebase_user),
     player_service: IPlayerService = Depends(get_player_service)
 ):
-    """
-    Complete registration after Firebase user creation
+    """Login endpoint - verifies Firebase token and creates user if needed
     
-    Implements UC-09: Player Registration
-
-    Registration Flow:
-    1. Frontend: Create user in Firebase (email + password)
-    2. Frontend: Get Firebase ID token
-    3. Frontend: Call this endpoint with token + name
-    4. Backend: Verify token (extracts email + UID) - NO DATABASE LOOKUP
-    5. Backend: Create user in database with Firebase data + provided name
-    
-    Validation (UC-09 Failure Scenarios):
-    - F4: Name cannot be empty or whitespace only (validated in DTO)
-    - F5: Name max 100 characters (validated in DTO)
-    - F6: Player cannot already exist in database
-    - F7: Token must be valid
+    Flow:
+    1. Frontend: User authenticates with Firebase (email + password)
+    2. Frontend: Sets display_name in Firebase profile (updateProfile)
+    3. Frontend: Gets Firebase ID token
+    4. Frontend: Calls this endpoint with token
+    5. Backend: Verifies token (if invalid/expired → 401, never reaches here)
+    6. Backend: Gets or creates user in our database
+    7. Backend: Returns user data
     """
     try:
-        # Email and UID come from the verified Firebase token
-        # We trust Firebase more than frontend input for these
-        player = await player_service.create_player(
-            id=firebase_user.uid,        # From Firebase token
-            name=request.name,           # From request body
-            email=firebase_user.email,   # From Firebase token
-            role="player"                # Default role
-        )
+        # Try to get user from our database using Firebase UID
+        player = await player_service.get_player_by_id(firebase_user.uid)
         
-        return PlayerResponse(
+    except PlayerNotFoundException:
+        # User exists in Firebase but not in our database → create them
+        try:
+            player = await player_service.create_player(
+                id=firebase_user.uid,
+                name=firebase_user.name,
+                email=firebase_user.email,
+                role="player"
+            )
+        except ValidationException as e:
+            # Firebase display_name was empty/invalid
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot create profile: {str(e)}. Please set your display name in Firebase first."
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed. Please try again later."
+        )
+    
+    # Return the player (either found or just created)
+    return LoginResponse(
+        message="Login successful",
+        user=PlayerResponse(
             id=player.id,
             name=player.name,
             email=player.email,
@@ -68,75 +139,7 @@ async def register(
             created_at=player.created_at,
             updated_at=player.updated_at
         )
-        
-    except PlayerAlreadyExistsException as e:
-        # F6: Player already exists in database
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Profile already exists. Please use login instead."
-        )
-    except ValidationException as e:
-        # F4, F5: Validation errors
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed. Please try again later."
-        )
-    
-@router.post("/login", response_model=LoginResponse)
-async def login(
-    firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
-    player_service: IPlayerService = Depends(get_player_service)
-):
-    """Login endpoint - verifies Firebase token and returns user info
-    
-    Implements UC-00: Player Login
-
-    Login Flow:
-    1. Frontend: User enters email + password
-    2. Frontend: Authenticate with Firebase (signInWithEmailAndPassword)
-    3. Frontend: Get Firebase ID token
-    4. Frontend: Call this endpoint with token
-    5. Backend: Verify token (handled by get_firebase_user dependency)
-    6. Backend: Return user data from database
-
-    Failure Scenarios (UC-00):
-    - F1: Wrong password - handled by Firebase
-    - F2: User not in Firebase - handled by Firebase
-    - F3: User in Firebase but not in the backend DB - handled here (404)
-    - F4: Invalid/expired token - handled by get_firebase_user (401)
-    """
-    try:
-        # Get user from database using Firebase UID
-        player = await player_service.get_player_by_id(firebase_user.uid)
-
-        return LoginResponse(
-            message="Login successful",
-            user=PlayerResponse(
-                id=player.id,
-                name=player.name,
-                email=player.email,
-                role=player.role,
-                created_at=player.created_at,
-                updated_at=player.updated_at
-            )
-        )
-    
-    except PlayerNotFoundException:
-        # UC-00 F3: User exists in Firebase but not in backend DB
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found. Please complete registration first."
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login failed. Please try again later."
-        )
+    )
     
 @router.get("/me", response_model=PlayerResponse)
 async def get_current_user_info(
@@ -185,7 +188,7 @@ async def get_current_user_info(
 async def create_test_user_and_token(
     test_email: str = "test@example.com",
     test_password: str = "testpassword123",
-    test_name: str = "Test User"
+    test_name: str  = "Test User"
 ):
     """DEVELOPMENT ONLY: Create a Firebase user and return auth token"""
     if get_settings().environment != "development":
