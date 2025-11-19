@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Optional, BinaryIO, Tuple
+from typing import Optional, BinaryIO, Tuple, Dict, Any
 from pathlib import Path
+
 from ...domain.player import Player
 from ...domain.video import Video, VideoStatus
+from ...domain.analysis import Analysis
+from ...domain.match import Match
 
 
 class IPlayerService(ABC):
@@ -124,4 +127,150 @@ class IFileStorageService(ABC):
     @abstractmethod
     def file_exists(self, storage_path: str) -> bool:
         """Check if file exists in storage"""
+        pass
+
+
+class IAnalysisService(ABC):
+    """
+    Interface for Analysis service
+    Orchestrates analysis entity creation and AI processing
+    """
+    
+    @abstractmethod
+    async def create_analysis_for_video(
+        self, 
+        video_id: int, 
+        player_id: str
+    ) -> Analysis:
+        """
+        Create analysis entity chain for a video
+        Creates Analysis, Match, and MatchPlayer entities
+        
+        Returns:
+            Created Analysis entity
+            
+        Raises:
+            VideoNotFoundException: If video doesn't exist
+            AnalysisException: If creation fails
+        """
+        pass
+    
+    @abstractmethod
+    async def store_analysis_results(
+        self,
+        match_id: int,
+        ai_results: Dict[str, Any]
+    ) -> None:
+        """
+        Store AI analysis results as SummaryMetrics
+        
+        Args:
+            match_id: ID of the match
+            ai_results: Dictionary with player stats from AI model
+                Format: {
+                    "player_1": {"hits": 245, "rallies": 45},
+                    "player_2": {"hits": 238, "rallies": 45},
+                    ...
+                }
+        """
+        pass
+    
+    @abstractmethod
+    async def complete_analysis(
+        self,
+        video_id: int,
+        success: bool = True,
+        error_message: Optional[str] = None
+    ) -> None:
+        """
+        Mark analysis as complete or failed
+        Updates video status accordingly
+        """
+        pass
+    
+    @abstractmethod
+    async def get_analysis_by_video(self, video_id: int) -> Analysis:
+        """
+        Get analysis for a video
+        
+        Raises:
+            AnalysisNotFoundException: If no analysis found
+        """
+        pass
+
+
+class IMatchService(ABC):
+    """
+    Interface for Match business logic
+    Implements UC-04 business rules
+    """
+    
+    @abstractmethod
+    async def get_match_overview(self, match_id: int) -> Dict[str, Any]:
+        """
+        Get match overview with player statistics
+        Implements UC-04 Success Scenario S1
+        
+        Returns:
+            Dictionary containing match info and player hit counts
+            
+        Raises:
+            MatchNotFoundException: If match doesn't exist
+            DataUnavailableException: If hit data is not available (UC-04 F1)
+        """
+        pass
+    
+    @abstractmethod
+    async def get_match_statistics_by_set(
+        self, 
+        match_id: int, 
+        set_number: int
+    ) -> Dict[str, Any]:
+        """
+        Get match statistics filtered by set
+        Implements UC-04 Success Scenario S2
+        
+        Raises:
+            MatchNotFoundException: If match doesn't exist
+            InvalidSetNumberException: If set number is invalid
+            DataUnavailableException: If hit data is not available
+        """
+        pass
+    
+    @abstractmethod
+    async def get_hit_comparison_chart_data(self, match_id: int) -> Dict[str, Any]:
+        """
+        Get data formatted for visual hit comparison chart
+        Implements UC-04 Success Scenario S3
+        
+        Returns:
+            Dictionary formatted for chart visualization (bar chart)
+            
+        Raises:
+            MatchNotFoundException: If match doesn't exist
+            DataUnavailableException: If hit data is not available
+        """
+        pass
+    
+    @abstractmethod
+    async def get_player_hit_count(
+        self, 
+        match_id: int, 
+        player_identifier: str
+    ) -> int:
+        """
+        Get hit count for a specific player in a match
+        
+        Args:
+            match_id: ID of the match
+            player_identifier: Player identifier from ML model (e.g., "player_1")
+            
+        Returns:
+            Total hit count for the player
+            
+        Raises:
+            MatchNotFoundException: If match doesn't exist
+            PlayerInMatchNotFoundException: If player not found in match
+            DataUnavailableException: If hit data is not available
+        """
         pass

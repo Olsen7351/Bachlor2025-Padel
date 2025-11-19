@@ -9,7 +9,7 @@ class AnalysisModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id"), nullable=False)  # Firebase string ID
     video_id: Mapped[int] = mapped_column(ForeignKey("videos.id"), nullable=False)
-    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), nullable=False)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), nullable=True)
     analysis_timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)

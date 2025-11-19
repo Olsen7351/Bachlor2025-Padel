@@ -7,6 +7,7 @@ from .config import get_settings
 from .presentation.controllers.player_controller import router as player_router
 from .presentation.controllers.auth_controller import router as auth_router
 from .presentation.controllers.video_controller import router as video_router
+from .presentation.controllers.match_controller import router as match_router
 from .business.exceptions import (
     AuthenticationException, 
     PlayerNotFoundException, 
@@ -14,7 +15,12 @@ from .business.exceptions import (
     VideoNotFoundException,
     InvalidFileFormatException,
     FileTooLargeException,
-    StorageException
+    StorageException,
+    MatchNotFoundException,
+    PlayerInMatchNotFoundException,
+    DataUnavailableException,
+    InvalidSetNumberException,
+    AnalysisNotCompleteException
 )
 from datetime import datetime
 
@@ -138,10 +144,60 @@ async def storage_exception_handler(request: Request, exc: StorageException):
     )
 
 
+@app.exception_handler(MatchNotFoundException)
+async def match_not_found_handler(request: Request, exc: MatchNotFoundException):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "type": "match_not_found"}
+    )
+
+
+@app.exception_handler(PlayerInMatchNotFoundException)
+async def player_in_match_not_found_handler(request: Request, exc: PlayerInMatchNotFoundException):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc), "type": "player_in_match_not_found"}
+    )
+
+
+@app.exception_handler(DataUnavailableException)
+async def data_unavailable_handler(request: Request, exc: DataUnavailableException):
+    """UC-04 F1: Handle when hit data is not available"""
+    return JSONResponse(
+        status_code=503,  # Service Unavailable
+        content={
+            "detail": str(exc),
+            "type": "data_unavailable",
+            "reason": "Analysis may have failed or is incomplete"
+        }
+    )
+
+
+@app.exception_handler(InvalidSetNumberException)
+async def invalid_set_number_handler(request: Request, exc: InvalidSetNumberException):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc), "type": "invalid_set_number"}
+    )
+
+
+@app.exception_handler(AnalysisNotCompleteException)
+async def analysis_not_complete_handler(request: Request, exc: AnalysisNotCompleteException):
+    return JSONResponse(
+        status_code=409,  # Conflict
+        content={
+            "detail": str(exc),
+            "type": "analysis_not_complete",
+            "message": "Analysis is still in progress or has not started"
+        }
+    )
+
+
 # Include API routes
 app.include_router(auth_router, prefix="/api")      # Auth routes
 app.include_router(player_router, prefix="/api")    # Protected player routes
 app.include_router(video_router, prefix="/api")     # Video upload routes
+app.include_router(match_router, prefix="/api")     # Match routes
 
 
 @app.get("/")
@@ -155,7 +211,8 @@ async def root():
         "endpoints": {
             "auth": "/api/auth",
             "players": "/api/players",
-            "videos": "/api/videos"
+            "videos": "/api/videos",
+            "matches": "/api/matches"
         }
     }
 

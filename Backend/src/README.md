@@ -94,6 +94,9 @@ uv sync --upgrade
 
 ### Development Commands
 ```bash
+# You might need to activate virtual environment to make pytest work
+source .venv/bin/activate
+
 # Run tests
 uv run pytest
 
@@ -234,12 +237,16 @@ Backend/src/
 │   │   ├── __init__.py
 │   │   ├── business/              # Service layer tests
 │   │   │   ├── __init__.py
-│   │   │   └── test_player_service.py  # UC-09 tests
+│   │   │   ├── test_player_service.py  # UC-09 tests
+│   │   │   ├── test_match_service.py   # UC-04 tests
+│   │   │   └── test_video_service.py   # Video service tests
 │   │   ├── data/                  # Repository tests (future)
 │   │   │   └── __init__.py
 │   │   └── presentation/          # Controller tests
 │   │       ├── __init__.py
-│   │       └── test_auth_controller.py # UC-00, UC-09 controller tests
+│   │       ├── test_auth_controller.py    # UC-00, UC-09 controller tests
+│   │       ├── test_match_controller.py   # Match controller tests
+│   │       └── test_video_controller.py   # Video controller tests
 │   └── integration/               # Integration tests (future)
 │       └── __init__.py
 │

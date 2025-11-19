@@ -56,3 +56,31 @@ class UnauthorizedAccessException(Exception):
 class ValidationException(Exception):
     """Raised when validation fails"""
     pass
+
+
+# Match exceptions
+class MatchNotFoundException(Exception):
+    """Raised when a match is not found"""
+    pass
+
+
+class PlayerInMatchNotFoundException(Exception):
+    """Raised when a player identifier is not found in a specific match"""
+    pass
+
+
+class DataUnavailableException(Exception):
+    """Raised when required data is not available
+    Implements UC-04 F1
+    """
+    pass
+
+
+class InvalidSetNumberException(Exception):
+    """Raised when an invalid set number is provided"""
+    pass
+
+
+class AnalysisNotCompleteException(Exception):
+    """Raised when trying to access data from incomplete analysis"""
+    pass
