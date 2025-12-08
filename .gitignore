@@ -213,3 +213,9 @@ __marimo__/
 
 ML-Models/Frames/
 ML-Models/Output/
+ML-Models/PadelTennis_Tracker/dataset/
+ML-Models/PadelTennis_Tracker/old/
+ML-Models/Classification_Model_Training_And_Annotation/dataset/
+ML-Models/Classification_Model_Training_And_Annotation/videos/
+ML-Models/Classification_Model_Training_And_Annotation/.claude/
+ML-Models/Classification_Model_Training_And_Annotation/old/
