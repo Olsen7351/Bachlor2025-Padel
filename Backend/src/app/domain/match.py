@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 @dataclass
 class Match:
@@ -14,7 +14,7 @@ class MatchPlayer:
     """Domain model for MatchPlayer entity"""
     id: Optional[int]
     match_id: int
-    player_identifier: str  # "player_0", "player_1", etc.
+    player_identifier: str  # "player_1", "player_2", etc.
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -25,8 +25,6 @@ class SummaryMetrics:
     match_player_id: int
     total_hits: int
     total_rallies: int
-    hits_id: Optional[int] = None  # Reference to detailed hits
-    rally_id: Optional[int] = None  # Reference to rally data
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

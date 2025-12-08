@@ -13,7 +13,6 @@ class VideoStatus(Enum):
 class Video:
     """Domain model for Video entity"""
     id: Optional[int]
-    uploading_player_id: int
     file_name: str
     storage_path: str
     status: VideoStatus = VideoStatus.UPLOADED

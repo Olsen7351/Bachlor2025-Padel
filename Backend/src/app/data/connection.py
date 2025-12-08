@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.config import get_settings
 
 # Import ALL models to register relationships
-from app.data.models import Base  # This imports all models via __init__.py
+from ..data.models import Base  # This imports all models via __init__.py
 
 settings = get_settings()
 
