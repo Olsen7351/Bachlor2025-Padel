@@ -211,6 +211,24 @@ __marimo__/
 # Database
 *.db
 
+# Firebase service account
+firebase-service-account.json
+**/firebase-service-account.json
+
+# Mac OS generated files
+.DS_Store
+*.DS_Store
+
+# Training data, input and output
+ML-Models/Models/Player & ball hits detection/training/
+ML-Models/Models/Player & ball hits detection/output/
+ML-Models/Models/Player & ball hits detection/output_videos/
+ML-Models/Models/Player & ball hits detection/input_videos/
+ML-Models/Models/Player & ball hits detection/tracker_stubs/
+ML-Models/Models/Player & ball hits detection/old/
+ML-Models/Models/Player & ball hits detection/models/
+ML-Models/Models/Player & ball hits detection/yolov8x.pt
+ML-Models/Models/Player & ball hits detection/main.py
 ML-Models/Frames/
 ML-Models/Output/
 ML-Models/PadelTennis_Tracker/dataset/
@@ -219,3 +237,6 @@ ML-Models/Classification_Model_Training_And_Annotation/dataset/
 ML-Models/Classification_Model_Training_And_Annotation/videos/
 ML-Models/Classification_Model_Training_And_Annotation/.claude/
 ML-Models/Classification_Model_Training_And_Annotation/old/
+Backend/src/app/business/services/deep_learning/models
+Backend/src/app/business/services/deep_learning/output_videos/
+Backend/src/app/business/services/deep_learning/input_videos/
