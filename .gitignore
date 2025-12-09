@@ -220,15 +220,15 @@ firebase-service-account.json
 *.DS_Store
 
 # Training data, input and output
-ML-Models/Models/Player & ball hits detection/training/
-ML-Models/Models/Player & ball hits detection/output/
-ML-Models/Models/Player & ball hits detection/output_videos/
-ML-Models/Models/Player & ball hits detection/input_videos/
-ML-Models/Models/Player & ball hits detection/tracker_stubs/
-ML-Models/Models/Player & ball hits detection/old/
-ML-Models/Models/Player & ball hits detection/models/
-ML-Models/Models/Player & ball hits detection/yolov8x.pt
-ML-Models/Models/Player & ball hits detection/main.py
+ML-Models/Models/Player & rally detection/training/
+ML-Models/Models/Player & rally detection/output/
+ML-Models/Models/Player & rally detection/output_videos/
+ML-Models/Models/Player & rally detection/input_videos/
+ML-Models/Models/Player & rally detection/tracker_stubs/
+ML-Models/Models/Player & rally detection/old/
+ML-Models/Models/Player & rally detection/models/
+ML-Models/Models/Player & rally detection/yolov8x.pt
+ML-Models/Models/Player & rally detection/main.py
 ML-Models/Frames/
 ML-Models/Output/
 ML-Models/PadelTennis_Tracker/dataset/
