@@ -1,9 +1,3 @@
-"""
-Import all models to ensure SQLAlchemy can resolve relationships.
-This must be imported before any database operations.
-"""
-
-# Import base first
 from .base import Base
 
 # Import all models to register them with SQLAlchemy
@@ -16,8 +10,7 @@ from .match_model import (
     SummaryMetricsModel,
     HitsModel,
     RallyModel,
-    HeatmapModel,
-    HeatmapCoordModel
+    HeatmapModel
 )
 
 # Export for easy importing
@@ -31,6 +24,5 @@ __all__ = [
     "SummaryMetricsModel", 
     "HitsModel",
     "RallyModel",
-    "HeatmapModel",
-    "HeatmapCoordModel"
+    "HeatmapModel"
 ]

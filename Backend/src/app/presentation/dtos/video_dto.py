@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -30,3 +30,8 @@ class VideoErrorResponse(BaseModel):
     details: Optional[str] = None
     supported_formats: Optional[list[str]] = None
     max_size_mb: Optional[int] = None
+
+
+class VideoUploadRequest(BaseModel):
+    """Request schema for video upload (used with form data)"""
+    court_number: int
