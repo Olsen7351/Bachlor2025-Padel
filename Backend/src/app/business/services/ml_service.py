@@ -6,7 +6,8 @@ matplotlib.use('Agg')  # Set BEFORE importing pyplot - required for background t
 from typing import Dict, List, Optional, Any
 import csv
 
-from .deep_learning.inference import run_main_pipeline
+from .deep_learning.config import PipelineConfig
+from .deep_learning.pipeline import run_main_pipeline
 from .deep_learning.utils import generate_heatmap
 
 
@@ -133,8 +134,8 @@ class MLService:
         print(f"[MLService] Court number: {court_number}", flush=True)
         print(f"[MLService] Output dir: {output_subdir}", flush=True)
         
-        # Create args namespace mimicking argparse output
-        args = self._build_pipeline_args(
+        # Build typed configuration
+        config = self._build_pipeline_config(
             video_path=video_path,
             court_number=court_number,
             output_dir=output_subdir,
@@ -142,13 +143,13 @@ class MLService:
         )
         
         # Run the main pipeline
-        run_main_pipeline(args)
+        run_main_pipeline(config)
         
         print(f"[MLService] Pipeline complete, parsing results...", flush=True)
         
-        # Parse outputs - note: filenames from inference.py
+        # Parse outputs - note: filenames from get_output_paths
         player_stats = self._parse_shot_csv(output_subdir / f"{video_stem}_shots.csv")
-        rallies = self._parse_rally_csv(output_subdir / f"{video_stem}_rallies.csv", fps)  # Note: rallies plural
+        rallies = self._parse_rally_csv(output_subdir / f"{video_stem}_rallies.csv", fps)
         
         # Generate per-player heatmaps
         heatmaps = {}
@@ -160,7 +161,6 @@ class MLService:
         print(f"[MLService] Court frame exists: {court_frame.exists()}", flush=True)
         
         # Map ML track_ids to our player identifiers
-        # Based on player_positions CSV: track_id 1,2 are near-court players
         track_to_player = {
             1: "player_1",
             2: "player_2",
@@ -172,7 +172,7 @@ class MLService:
                 player_csv=player_csv,
                 court_img=court_frame,
                 output_path=heatmap_path,
-                player_id=track_id  # Pass the track_id for filtering
+                player_id=track_id
             )
             if heatmap_path.exists():
                 heatmaps[player_id] = HeatmapData(
@@ -185,7 +185,6 @@ class MLService:
         
         print(f"[MLService] Analysis complete. Rallies: {len(rallies)}, Heatmaps: {len(heatmaps)}", flush=True)
         
-        # Build result
         return MLAnalysisResult(
             player_stats=player_stats,
             rallies=rallies,
@@ -194,78 +193,69 @@ class MLService:
             output_video_path=output_subdir / f"{video_stem}_output.avi"
         )
     
-    def _build_pipeline_args(
+    def _build_pipeline_config(
         self,
         video_path: Path,
         court_number: int,
         output_dir: Path,
         fps: float
-    ):
-        """Build args namespace for inference pipeline"""
-        from types import SimpleNamespace
+    ) -> PipelineConfig:
+        """Build typed PipelineConfig for inference pipeline"""
+        config = PipelineConfig()
         
-        return SimpleNamespace(
-            mode="full",
-            input_video=str(video_path),
-            output_video=None,  # Auto-generated
-            output_dir=str(output_dir),
-            court_json=str(self.court_config_path),
-            court_number=court_number,
-            fps=fps,
-            
-            # Model paths
-            tracknet_model=str(self.models_dir / "TrackNet_best.pt"),
-            player_model=str(self.models_dir / "yolov8s.pt"),
-            shot_model=str(self.models_dir / "best_model.pth"),
-            yolo_pose=str(self.models_dir / "yolov8n-pose.pt"),
-            
-            # Stubs disabled for real inference
-            use_stubs=False,
-            player_stub=None,
-            ball_stub=None,
-            
-            # Detection thresholds
-            ball_threshold=0.5,
-            min_heatmap_conf=0.5,
-            confidence_threshold=None,
-            
-            # Rally parameters
-            min_velocity=3.0,
-            serve_velocity=6.0,
-            base_gap_during_rally=40,
-            base_rally_end_gap=70,
-            max_gap_extension=60,
-            min_rally_frames=45,
-            min_rally_distance=80,
-            
-            # Shot classification
-            enable_shot_classification=True,
-            window_size=32,
-            stride=8,
-            yolo_resolution=[640, 360],
-            classifier_resolution=128,
-            
-            # Visualization
-            trail_length=10,
-            draw_exclusion_zones=True,
-            generate_heatmap=True,
-            
-            # Heatmap settings
-            heatmap_bins_x=200,
-            heatmap_bins_y=100,
-            heatmap_gauss=9,
-            heatmap_inplay_only=False,
-            heatmap_min_conf=None,
-            heatmap_players="1,2",  # Only analyze players 1 and 2
-            heatmap_alpha=0.7,
-            heatmap_show_axes=False,
-            
-            # Calibration (from JSON)
-            calib=None,
-            calib_csv=None,
-            court_w=20.0,
-            court_h=10.0,
-        )
+        # Video settings
+        config.video.input_path = str(video_path)
+        config.video.output_path = None  # Auto-generated
+        config.video.output_dir = str(output_dir)
+        config.video.fps = fps
+        
+        # Court settings
+        config.court.court_json = str(self.court_config_path)
+        config.court.court_number = court_number
+        config.court.court_width = 20.0
+        config.court.court_height = 10.0
+        
+        # Model paths
+        config.models.tracknet = str(self.models_dir / "TrackNet_best.pt")
+        config.models.player_detector = str(self.models_dir / "yolov8s.pt")
+        config.models.shot_classifier = str(self.models_dir / "best_model.pth")
+        config.models.yolo_pose = str(self.models_dir / "yolov8n-pose.pt")
+        
+        # Stubs disabled for real inference
+        config.stubs.use_stubs = False
+        
+        # Ball detection
+        config.ball.detection_threshold = 0.5
+        config.ball.min_heatmap_confidence = 0.5
+        config.ball.trail_length = 10
+        config.ball.draw_exclusion_zones = True
+        
+        # Rally parameters
+        config.rally.min_velocity = 3.0
+        config.rally.serve_velocity = 6.0
+        config.rally.base_gap_during_rally = 40
+        config.rally.base_rally_end_gap = 70
+        config.rally.max_gap_extension = 60
+        config.rally.min_rally_frames = 45
+        config.rally.min_rally_distance = 80
+        
+        # Shot classification
+        config.shot.enabled = True
+        config.shot.window_size = 32
+        config.shot.stride = 8
+        config.shot.yolo_resolution = (640, 360)
+        config.shot.classifier_resolution = 128
+        
+        # Heatmap settings
+        config.heatmap.bins_x = 200
+        config.heatmap.bins_y = 100
+        config.heatmap.gaussian_sigma = 9
+        config.heatmap.inplay_only = False
+        config.heatmap.players_filter = "1,2"
+        config.heatmap.alpha = 0.7
+        config.heatmap.show_axes = False
+        
+        return config
     
     def _parse_shot_csv(self, csv_path: Path) -> Dict[str, PlayerStats]:
         """Parse shot classification CSV output"""
@@ -276,14 +266,11 @@ class MLService:
             "player_4": PlayerStats(player_identifier="player_4"),
         }
         
-        # Map from ML player_id to our player identifiers
-        # ML typically uses 0, 2 for near-court players and 1, 3 for far-court
-        # Based on actual CSV output: player_id 0 and 2 are near court
         track_id_to_player = {
             "0": "player_1",
             "2": "player_2",
-            "1": "player_3",  # Far court (if present)
-            "3": "player_4",  # Far court (if present)
+            "1": "player_3",
+            "3": "player_4",
         }
         
         if not csv_path.exists():
@@ -294,11 +281,9 @@ class MLService:
             with open(csv_path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    # CSV columns: frame, shot_type, player_id, confidence
                     raw_player_id = str(row.get('player_id', '')).strip()
                     shot_type = row.get('shot_type', '').lower().strip()
                     
-                    # Map track_id to player identifier
                     player_id = track_id_to_player.get(raw_player_id)
                     if not player_id:
                         print(f"[MLService] Unknown player_id in CSV: {raw_player_id}", flush=True)
@@ -307,7 +292,6 @@ class MLService:
                     player = stats[player_id]
                     player.total_hits += 1
                     
-                    # Categorize shot type
                     if shot_type == 'lob':
                         player.lob += 1
                     elif shot_type == 'serve':
@@ -316,7 +300,6 @@ class MLService:
                         player.backhand += 1
                     elif shot_type in ['smash', 'overhead']:
                         player.overhead_hits += 1
-                    # Other shot types just count toward total_hits
                     
             print(f"[MLService] Parsed shots - player_1: {stats['player_1'].total_hits}, player_2: {stats['player_2'].total_hits}", flush=True)
                     
@@ -337,7 +320,6 @@ class MLService:
             with open(csv_path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    # CSV columns: rally_id, start_frame, end_frame, duration_sec, ball_positions_count
                     rally = RallyData(
                         rally_id=int(row.get('rally_id', 0)),
                         duration_seconds=float(row.get('duration_sec', 0))
@@ -373,7 +355,7 @@ class MLService:
                 gauss=9,
                 inplay_only=False,
                 min_conf=None,
-                players=[player_id],  # Filter to specific player
+                players=[player_id],
                 heat_alpha=0.7,
                 show_axes=False
             )
