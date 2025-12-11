@@ -1,5 +1,5 @@
 import type {FormEvent} from "react";
-import ParticleBackground from "./ParticleBackground.tsx";
+import ParticleBackground from "../../globalComponents/ParticleBackground.tsx";
 import { useNavigate } from "react-router-dom";
 import Animation from "../../globalComponents/Animation.tsx";
 

@@ -1,4 +1,4 @@
-import ParticleBackground from "./ParticleBackground.tsx";
+import ParticleBackground from "../../globalComponents/ParticleBackground.tsx";
 import Animation from "../../globalComponents/Animation.tsx";
 import {ArrowUpOnSquareStackIcon} from "@heroicons/react/24/outline";
 import {useState} from "react";
@@ -10,8 +10,8 @@ const UploadPage = () => {
     const [fileName, setFileName] = useState<string | null>(null);
 
     function handleAnalyse() {
-        alert("Analyse started for file: " + fileName);
-        navigate("/1234");
+        alert("Analyse er i gang...");
+        navigate("/id");
     }
 
     return (
