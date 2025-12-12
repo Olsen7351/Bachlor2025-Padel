@@ -1,8 +1,9 @@
 """Video controller - Presentation layer (FastAPI endpoints)"""
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, BackgroundTasks, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from typing import Annotated, Optional
+from pathlib import Path
 
 from app.presentation.dtos.video_dto import (
     VideoUploadResponse,
@@ -11,6 +12,7 @@ from app.presentation.dtos.video_dto import (
 )
 from ...business.services.video_service import VideoService
 from ...business.services.file_storage import FileStorageService
+from ...business.services.video_converter import VideoConverter
 from ...data.repositories.video_repository import VideoRepository
 from ...data.connection import get_db_session
 from ...auth.dependencies import get_current_user
@@ -26,13 +28,11 @@ router = APIRouter(prefix="/videos", tags=["videos"])
 
 
 def get_video_service(session: AsyncSession = Depends(get_db_session)) -> VideoService:
-    """
-    Dependency injection for VideoService
-    Follows Dependency Inversion Principle
-    """
+    """Dependency injection for VideoService"""
     video_repository = VideoRepository(session)
     file_storage_service = FileStorageService()
-    return VideoService(video_repository, file_storage_service)
+    video_converter = VideoConverter()
+    return VideoService(video_repository, file_storage_service, video_converter)
 
 
 @router.post(
@@ -46,6 +46,14 @@ def get_video_service(session: AsyncSession = Depends(get_db_session)) -> VideoS
     summary="Upload a padel match video",
     description="""
     Upload a video file for analysis. Implements UC-01.
+    
+    **Parameters:**
+    - file: Video file to upload
+    - court_number: Court number for calibration (required for ML analysis)
+    
+    **Video Processing:**
+    - Videos larger than 1080p will be automatically downscaled
+    - Videos with FPS > 30 will be converted to 30fps
     
     **Success Scenarios:**
     - S1: Video uploaded successfully and analysis will start
@@ -63,6 +71,7 @@ def get_video_service(session: AsyncSession = Depends(get_db_session)) -> VideoS
 async def upload_video(
     file: Annotated[UploadFile, File(description="Video file to upload")],
     background_tasks: BackgroundTasks,
+    court_number: Annotated[int, Form(description="Court number for calibration")],
     current_user: Player = Depends(get_current_user),
     video_service: VideoService = Depends(get_video_service),
     session: AsyncSession = Depends(get_db_session)
@@ -72,28 +81,34 @@ async def upload_video(
     
     Handles:
     - File validation (format and size)
+    - Video conversion (if needed)
     - File storage
     - Database record creation
-    - Success and failure scenarios from UC-01
 
     Triggers:
-    - New analysis
+    - Background ML analysis with court_number
     """
     
-    # Validate that a file was uploaded
     if not file:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No file provided"
         )
     
+    # Validate court number
+    if court_number < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Court number must be a positive integer"
+        )
+    
     # Get file size
-    file.file.seek(0, 2)  # Seek to end
-    file_size = file.file.tell()  # Get position (size)
-    file.file.seek(0)  # Reset to beginning
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
     
     try:
-        # Upload video through service (Business Logic Layer)
+        # Upload video through service (handles conversion)
         video = await video_service.upload_video(
             file=file.file,
             filename=file.filename,
@@ -104,14 +119,18 @@ async def upload_video(
         
         await session.commit()
 
-        # Trigger analysis in background
+        # Get video file path for analysis
+        video_path = video_service.get_video_path(video)
+
+        # Trigger analysis in background with court_number
         background_tasks.add_task(
             process_video_analysis,
             video_id=video.id,
-            player_id=current_user.id
+            player_id=current_user.id,
+            court_number=court_number,
+            video_path=str(video_path)
         )
 
-        # Map domain entity to DTO
         return VideoUploadResponse(
             id=video.id,
             file_name=video.file_name,
@@ -122,7 +141,6 @@ async def upload_video(
         )
         
     except InvalidFileFormatException as e:
-        # F1: File format not supported
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -133,7 +151,6 @@ async def upload_video(
         )
     
     except FileTooLargeException as e:
-        # F2: File too large
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -144,7 +161,6 @@ async def upload_video(
         )
     
     except StorageException as e:
-        # F3: Storage error (network/disk issues)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -154,7 +170,6 @@ async def upload_video(
         )
     
     except Exception as e:
-        # Unexpected errors
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -174,26 +189,36 @@ async def get_upload_config(
     video_service: VideoService = Depends(get_video_service)
 ) -> dict:
     """Get upload configuration information"""
-    
     return {
         "max_file_size_mb": video_service.get_max_file_size_mb(),
         "allowed_formats": video_service.get_allowed_formats(),
-        "description": "Upload configuration for video files"
+        "max_resolution": "1920x1080",
+        "max_fps": 30,
+        "description": "Videos larger than 1080p or with FPS > 30 will be automatically converted"
     }
 
-async def process_video_analysis(video_id: int, player_id: str):
-    """Background task to create analysis and run ML model"""
+
+async def process_video_analysis(
+    video_id: int, 
+    player_id: str, 
+    court_number: int,
+    video_path: str
+):
+    """Background task to run ML analysis"""
     from app.data.connection import get_db_session
     from app.data.repositories.analysis_repository import AnalysisRepository
     from app.data.repositories.match_repository import (
         MatchRepository, MatchPlayerRepository
     )
     from app.data.repositories.summary_metrics_repository import SummaryMetricsRepository
+    from app.data.repositories.hits_repository import HitsRepository
+    from app.data.repositories.rally_repository import RallyRepository
+    from app.data.repositories.heatmap_repository import HeatmapRepository
     from app.data.repositories.video_repository import VideoRepository
     from app.business.services.analysis_service import AnalysisService
-    import asyncio
+    from app.business.services.ml_service import MLService
+    from pathlib import Path
     
-    # Get database session
     async for session in get_db_session():
         try:
             # Create repositories
@@ -201,15 +226,23 @@ async def process_video_analysis(video_id: int, player_id: str):
             match_repo = MatchRepository(session)
             match_player_repo = MatchPlayerRepository(session)
             metrics_repo = SummaryMetricsRepository(session)
+            hits_repo = HitsRepository(session)
+            rally_repo = RallyRepository(session)
+            heatmap_repo = HeatmapRepository(session)
             video_repo = VideoRepository(session)
             
-            # Create analysis service
+            # Create services
+            ml_service = MLService()
             analysis_service = AnalysisService(
                 analysis_repo,
                 match_repo,
                 match_player_repo,
                 metrics_repo,
-                video_repo
+                hits_repo,
+                rally_repo,
+                heatmap_repo,
+                video_repo,
+                ml_service
             )
             
             # Step 1: Create analysis entity chain
@@ -218,19 +251,22 @@ async def process_video_analysis(video_id: int, player_id: str):
                 player_id=player_id
             )
             
-            # Step 2: Run AI analysis (mock for now)
-            ai_results = await run_mock_ai_analysis(video_id)
+            # Step 2: Run ML analysis
+            ml_result = await analysis_service.run_ml_analysis(
+                video_id=video_id,
+                video_path=Path(video_path),
+                court_number=court_number
+            )
             
             # Step 3: Store results
             await analysis_service.store_analysis_results(
                 match_id=analysis.match_id,
-                ai_results=ai_results
+                ml_result=ml_result
             )
             
             # Step 4: Mark as complete
             await analysis_service.complete_analysis(video_id, success=True)
             
-            # Commit transaction
             await session.commit()
             
         except Exception as e:
@@ -243,23 +279,3 @@ async def process_video_analysis(video_id: int, player_id: str):
                 await session.commit()
             except:
                 await session.rollback()
-
-
-async def run_mock_ai_analysis(video_id: int) -> dict:
-    """
-    Mock AI analysis - REPLACE THIS with real ML model later
-    Returns fake hit counts for testing
-    """
-    import asyncio
-    import random
-    
-    # Simulate AI processing time (2 seconds)
-    await asyncio.sleep(2)
-    
-    # Return mock results
-    return {
-        "player_1": {"hits": random.randint(200, 250), "rallies": 45},
-        "player_2": {"hits": random.randint(200, 250), "rallies": 45},
-        "player_3": {"hits": random.randint(180, 230), "rallies": 45},
-        "player_4": {"hits": random.randint(180, 230), "rallies": 45}
-    }

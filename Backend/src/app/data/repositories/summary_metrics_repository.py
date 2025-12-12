@@ -1,6 +1,8 @@
+"""SummaryMetrics repository implementation"""
+
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from datetime import datetime
 
 from ...domain.match import SummaryMetrics
@@ -9,7 +11,7 @@ from .interfaces import ISummaryMetricsRepository
 
 
 class SummaryMetricsRepository(ISummaryMetricsRepository):
-    """Repository for SummaryMetrics - works with SummaryMetricsModel"""
+    """Repository for SummaryMetrics entity"""
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, SummaryMetricsModel)
@@ -24,6 +26,8 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
             match_player_id=model.match_player_id,
             total_hits=model.total_hits,
             total_rallies=model.total_rallies,
+            hits_id=model.hits_id,
+            heatmap_id=model.heatmap_id,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
@@ -35,6 +39,8 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
             match_player_id=domain.match_player_id,
             total_hits=domain.total_hits,
             total_rallies=domain.total_rallies,
+            hits_id=domain.hits_id,
+            heatmap_id=domain.heatmap_id,
             created_at=domain.created_at,
             updated_at=domain.updated_at
         )
@@ -47,18 +53,20 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
         return self._to_domain(model)
     
     async def get_all(self) -> List[SummaryMetrics]:
-        """Get all summary metrics"""
-        stmt = select(SummaryMetricsModel).order_by(SummaryMetricsModel.created_at.desc())
+        """Get all summary metrics records"""
+        stmt = select(SummaryMetricsModel)
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_domain(model) for model in models]
     
     async def create(self, entity: SummaryMetrics) -> SummaryMetrics:
-        """Create new summary metrics record"""
+        """Create a new summary metrics record"""
         model = SummaryMetricsModel(
             match_player_id=entity.match_player_id,
             total_hits=entity.total_hits,
             total_rallies=entity.total_rallies,
+            hits_id=entity.hits_id,
+            heatmap_id=entity.heatmap_id,
             created_at=datetime.now(),
             updated_at=datetime.now()
         )
@@ -70,23 +78,26 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
         return self._to_domain(model)
     
     async def update(self, entity: SummaryMetrics) -> SummaryMetrics:
-        """Update existing summary metrics"""
-        stmt = select(SummaryMetricsModel).where(SummaryMetricsModel.id == entity.id)
+        """Update existing summary metrics record"""
+        stmt = (
+            update(SummaryMetricsModel)
+            .where(SummaryMetricsModel.id == entity.id)
+            .values(
+                total_hits=entity.total_hits,
+                total_rallies=entity.total_rallies,
+                hits_id=entity.hits_id,
+                heatmap_id=entity.heatmap_id,
+                updated_at=datetime.now()
+            )
+            .returning(SummaryMetricsModel)
+        )
         result = await self.session.execute(stmt)
+        await self.session.flush()
         model = result.scalar_one_or_none()
-        
-        if model:
-            model.total_hits = entity.total_hits
-            model.total_rallies = entity.total_rallies
-            model.updated_at = datetime.now()
-            await self.session.flush()
-            await self.session.refresh(model)
-            return self._to_domain(model)
-        
-        return None
+        return self._to_domain(model)
     
     async def delete(self, id: int) -> bool:
-        """Delete summary metrics"""
+        """Delete summary metrics record"""
         stmt = select(SummaryMetricsModel).where(SummaryMetricsModel.id == id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -97,10 +108,8 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
             return True
         return False
     
-    # SummaryMetrics-specific methods for UC-04
-    
     async def get_by_match_player_id(self, match_player_id: int) -> Optional[SummaryMetrics]:
-        """Get summary metrics for a specific match player"""
+        """Get metrics for a match player"""
         stmt = select(SummaryMetricsModel).where(
             SummaryMetricsModel.match_player_id == match_player_id
         )
@@ -109,31 +118,17 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
         return self._to_domain(model)
     
     async def get_all_by_match_id(self, match_id: int) -> List[SummaryMetrics]:
-        """
-        Get summary metrics for all players in a match
-        UC-04 S1: Display all player hit counts
-        
-        Business Rule: Returns metrics ordered by hit count descending
-        """
+        """Get all metrics for a match"""
         stmt = (
             select(SummaryMetricsModel)
-            .join(MatchPlayerModel, SummaryMetricsModel.match_player_id == MatchPlayerModel.id)
+            .join(MatchPlayerModel)
             .where(MatchPlayerModel.match_id == match_id)
             .order_by(SummaryMetricsModel.total_hits.desc())
         )
-        
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_domain(model) for model in models]
     
     async def get_by_match_and_set(self, match_id: int, set_number: int) -> List[SummaryMetrics]:
-        """
-        Get summary metrics filtered by set number
-        UC-04 S2: Filter by set (placeholder for future implementation)
-        
-        Note: Set-level filtering requires Set entity implementation.
-        Currently returns all metrics for the match.
-        """
-        # TODO: Implement set-level filtering when Set entity is added
-        # This will require joining with Set table and filtering by set_number
+        """Get metrics filtered by set (placeholder - returns all for now)"""
         return await self.get_all_by_match_id(match_id)

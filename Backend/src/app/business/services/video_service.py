@@ -1,6 +1,18 @@
+"""
+Video Service - Handles video upload and processing business logic.
+
+Responsibilities:
+- Validate video files (format, size)
+- Convert videos to normalized format (1080p 30fps max)
+- Store videos via file storage service
+- Create video database records
+- Update video status
+"""
+
 from typing import BinaryIO, Optional
 from pathlib import Path
 from datetime import datetime
+import tempfile
 import ffmpeg
 
 from ...domain.video import Video, VideoStatus
@@ -13,18 +25,20 @@ from ...business.exceptions import (
     StorageException
 )
 from ...config import get_settings
+from .video_converter import VideoConverter
 
 
 class VideoService(IVideoService):
     """
-    Video service implementation
-    Handles business logic for video operations
+    Video service implementation.
+    Handles business logic for video operations including conversion.
     """
     
     def __init__(
         self, 
         video_repository: IVideoRepository,
-        file_storage_service: IFileStorageService
+        file_storage_service: IFileStorageService,
+        video_converter: Optional[VideoConverter] = None
     ):
         """
         Initialize service with dependencies (Dependency Inversion Principle)
@@ -32,9 +46,11 @@ class VideoService(IVideoService):
         Args:
             video_repository: Repository interface for video data access
             file_storage_service: Storage service interface for file operations
+            video_converter: Video converter for normalizing uploads
         """
         self._video_repository = video_repository
         self._file_storage = file_storage_service
+        self._video_converter = video_converter or VideoConverter()
         self._settings = get_settings()
     
     @property
@@ -58,28 +74,37 @@ class VideoService(IVideoService):
         filename: str, 
         content_type: str,
         file_size: int,
-        player_id: str
+        player_id: str,
+        court_number: Optional[int] = None
     ) -> Video:
         """
-        Upload and process a video file
-        Implements UC-01 Success Scenario S1 and Failure Scenarios F1, F2
+        Upload and process a video file.
         
         Business Rules:
         1. Validate file format (F1)
         2. Validate file size (F2)
-        3. Store file securely
-        4. Create database record
-        5. Set initial status to UPLOADED
+        3. Convert video if needed (>1080p or >30fps)
+        4. Store file securely
+        5. Create database record
+        6. Set initial status to UPLOADED
         
+        Args:
+            file: Binary file content
+            filename: Original filename
+            content_type: MIME type
+            file_size: File size in bytes
+            player_id: ID of uploading player
+            court_number: Optional court number (stored for later analysis)
+            
         Returns:
             Video domain entity with UPLOADED status
             
         Raises:
             InvalidFileFormatException: If file format is not supported (F1)
             FileTooLargeException: If file exceeds size limit (F2)
-            StorageException: If file storage fails (F3 related)
+            StorageException: If file storage fails (F3)
         """
-        # Validate file format (F1: Unsupported format)
+        # Validate file format
         file_ext = Path(filename).suffix[1:].lower()
         if file_ext not in self.ALLOWED_VIDEO_FORMATS:
             raise InvalidFileFormatException(
@@ -87,67 +112,85 @@ class VideoService(IVideoService):
                 f"Allowed formats: {', '.join(self.ALLOWED_VIDEO_FORMATS)}"
             )
         
-        # Validate file size (F2: File too large)
+        # Validate file size
         if file_size > self.MAX_FILE_SIZE_BYTES:
             size_mb = file_size / (1024 * 1024)
             raise FileTooLargeException(
                 f"File size ({size_mb:.2f}MB) exceeds maximum allowed size ({self.MAX_FILE_SIZE_MB}MB)"
             )
         
-        # Store file (Delegation to specialized service - SRP)
+        # Save to temp file first for conversion check
+        temp_path = None
+        converted_path = None
+        
         try:
-            storage_path, stored_filename = await self._file_storage.save_video(
-                file, filename, player_id
+            # Write to temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_ext}') as temp_file:
+                temp_path = Path(temp_file.name)
+                temp_file.write(file.read())
+            
+            # Check if conversion is needed and convert
+            final_path = await self._video_converter.convert_async(temp_path)
+            
+            # If converted, update the filename
+            if final_path != temp_path:
+                converted_path = final_path
+                filename = f"{Path(filename).stem}_converted.mp4"
+            
+            # Read the final file for storage
+            with open(final_path, 'rb') as f:
+                file_content = f
+                
+                # Store file
+                storage_path, stored_filename = await self._file_storage.save_video(
+                    f, filename, player_id
+                )
+            
+            # Extract video duration from stored file
+            full_file_path = self._file_storage.get_file_path(storage_path)
+            video_duration = self._extract_video_duration(full_file_path)
+            
+            # Create video domain entity
+            video = Video(
+                id=None,
+                file_name=filename,
+                storage_path=storage_path,
+                status=VideoStatus.UPLOADED,
+                upload_timestamp=datetime.now(),
+                video_length=video_duration,
+                is_deleted=False,
+                created_at=None,
+                updated_at=None
             )
-        except StorageException:
-            raise  # Re-raise storage errors
-        
-        # Extract video duration from stored file
-        full_file_path = self._file_storage.get_file_path(storage_path)
-        video_duration = self._extract_video_duration(full_file_path)
-
-        # Create video domain entity
-        video = Video(
-            id=None,
-            file_name=filename,
-            storage_path=storage_path,
-            status=VideoStatus.UPLOADED,
-            upload_timestamp=datetime.now(),
-            video_length=video_duration,
-            is_deleted=False,
-            created_at=None,  # Set by repository
-            updated_at=None   # Set by repository
-        )
-        
-        # Persist to database
-        created_video = await self._video_repository.create(video)
-        
-        # TODO: Trigger async analysis queue here (for future implementation)
-        # await self._analysis_queue.enqueue(created_video.id)
-        
-        return created_video
-    
-    # Internal methods used by analysis service or admin operations
-    # Not exposed through public controller but available for internal use
+            
+            # Persist to database
+            created_video = await self._video_repository.create(video)
+            
+            return created_video
+            
+        except (InvalidFileFormatException, FileTooLargeException, StorageException):
+            raise
+        except Exception as e:
+            raise StorageException(f"Failed to process video: {str(e)}")
+        finally:
+            # Cleanup temp files
+            if temp_path and temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except:
+                    pass
+            if converted_path and converted_path.exists():
+                try:
+                    converted_path.unlink()
+                except:
+                    pass
     
     async def delete_video(self, video_id: int) -> bool:
-        """
-        Soft delete a video
-        Used internally by admin operations or cleanup jobs
-        
-        Returns:
-            True if deletion was successful
-        """
+        """Soft delete a video"""
         return await self._video_repository.soft_delete(video_id)
     
     async def get_video_by_id(self, video_id: int) -> Optional[Video]:
-        """
-        Get video by ID
-        Used internally by analysis service or admin operations
-        
-        Returns:
-            Video entity or None if not found
-        """
+        """Get video by ID"""
         return await self._video_repository.get_by_id(video_id)
     
     async def update_video_status(
@@ -156,51 +199,21 @@ class VideoService(IVideoService):
         status: VideoStatus,
         error_message: Optional[str] = None
     ) -> Video:
-        """
-        Update video processing status
-        Implements UC-01 Failure Scenario F4 (Analysis failed)
-        Used internally by analysis service
-        
-        Args:
-            video_id: ID of the video
-            status: New status to set
-            error_message: Optional error message if status is ERROR
-            
-        Returns:
-            Updated video entity
-            
-        Raises:
-            VideoNotFoundException: If video doesn't exist
-        """
+        """Update video processing status"""
         video = await self._video_repository.get_by_id(video_id)
         if not video:
             raise VideoNotFoundException(f"Video with ID {video_id} not found")
         
-        # Update status
-        updated_video = await self._video_repository.update_status(
+        return await self._video_repository.update_status(
             video_id, status, error_message
         )
-        
-        return updated_video
     
     def validate_video_file(self, filename: str, file_size: int) -> tuple[bool, Optional[str]]:
-        """
-        Validate video file before upload
-        Implements UC-01 Failure Scenarios F1 and F2
-        
-        Business Rules:
-        1. File must have allowed extension
-        2. File size must not exceed maximum
-        
-        Returns:
-            Tuple of (is_valid, error_message)
-        """
-        # Check file extension (F1: Unsupported format)
+        """Validate video file before upload"""
         file_extension = Path(filename).suffix[1:].lower()
         if file_extension not in self.ALLOWED_VIDEO_FORMATS:
             return False, f"Format '{file_extension}' not supported. Allowed: {', '.join(self.ALLOWED_VIDEO_FORMATS)}"
         
-        # Check file size (F2: File too large)
         if file_size > self.MAX_FILE_SIZE_BYTES:
             size_mb = file_size / (1024 * 1024)
             return False, f"File size ({size_mb:.2f}MB) exceeds maximum ({self.MAX_FILE_SIZE_MB}MB)"
@@ -209,22 +222,18 @@ class VideoService(IVideoService):
     
     def get_allowed_formats(self) -> list[str]:
         """Get list of allowed video formats"""
-        return self.ALLOWED_VIDEO_FORMATS.copy()
+        return list(self.ALLOWED_VIDEO_FORMATS)
     
     def get_max_file_size_mb(self) -> int:
         """Get maximum allowed file size in MB"""
         return self.MAX_FILE_SIZE_MB
     
+    def get_video_path(self, video: Video) -> Path:
+        """Get the full path to a video file"""
+        return self._file_storage.get_file_path(video.storage_path)
+    
     def _extract_video_duration(self, file_path: Path) -> Optional[float]:
-        """
-        Extract video duration in seconds using ffprobe
-
-        Args:
-            file_path: Path to the video file
-
-        Returns:
-            Duration in seconds or None if extraction fails
-        """
+        """Extract video duration in seconds using ffprobe"""
         try: 
             probe = ffmpeg.probe(str(file_path))
             duration = float(probe['format']['duration'])
@@ -232,4 +241,3 @@ class VideoService(IVideoService):
         except Exception as e:
             print(f"Warning: Could not extract video duration: {str(e)}")
             return None
-    

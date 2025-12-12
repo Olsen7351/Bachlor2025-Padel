@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Optional, BinaryIO, Tuple, Dict, Any
+from typing import Optional, BinaryIO, Tuple, Dict, Any, List
 from pathlib import Path
 
 from ...domain.player import Player
 from ...domain.video import Video, VideoStatus
 from ...domain.analysis import Analysis
-from ...domain.match import Match
 
 
 class IPlayerService(ABC):
@@ -31,35 +30,23 @@ class IPlayerService(ABC):
 
 
 class IVideoService(ABC):
-    """Interface for Video service following Service Layer pattern"""
+    """Interface for video business operations"""
     
     @abstractmethod
     async def upload_video(
-        self, 
-        file: BinaryIO, 
-        filename: str, 
+        self,
+        file: BinaryIO,
+        filename: str,
         content_type: str,
         file_size: int,
         player_id: str
     ) -> Video:
-        """
-        Upload and process a video file
-        
-        Args:
-            file: The video file binary content
-            filename: Original filename
-            content_type: MIME type of the file
-            file_size: Size of the file in bytes
-            player_id: ID of the player uploading the video
-            
-        Returns:
-            Video domain entity
-            
-        Raises:
-            InvalidFileFormatError: If file format is not supported
-            FileTooLargeError: If file exceeds size limit
-            StorageError: If file storage fails
-        """
+        """Upload and process video file"""
+        pass
+    
+    @abstractmethod
+    async def delete_video(self, video_id: int) -> bool:
+        """Soft delete video"""
         pass
     
     @abstractmethod
@@ -69,35 +56,36 @@ class IVideoService(ABC):
     
     @abstractmethod
     async def update_video_status(
-        self, 
-        video_id: int, 
+        self,
+        video_id: int,
         status: VideoStatus,
         error_message: Optional[str] = None
     ) -> Video:
-        """Update video processing status"""
+        """Update video status"""
         pass
     
     @abstractmethod
-    def validate_video_file(self, filename: str, file_size: int) -> tuple[bool, Optional[str]]:
-        """
-        Validate video file before upload
-        
-        Returns:
-            Tuple of (is_valid, error_message)
-        """
+    def validate_video_file(
+        self, 
+        filename: str, 
+        file_size: int
+    ) -> tuple[bool, Optional[str]]:
+        """Validate video file"""
         pass
     
     @abstractmethod
-    async def delete_video(self, video_id: int) -> bool:
-        """Soft delete a video"""
+    def get_allowed_formats(self) -> List[str]:
+        """Get allowed formats"""
+        pass
+    
+    @abstractmethod
+    def get_max_file_size_mb(self) -> int:
+        """Get max file size in MB"""
         pass
 
 
 class IFileStorageService(ABC):
-    """
-    Interface for file storage operations
-    Following Dependency Inversion Principle
-    """
+    """Interface for file storage operations"""
     
     @abstractmethod
     async def save_video(
@@ -105,28 +93,23 @@ class IFileStorageService(ABC):
         file: BinaryIO, 
         original_filename: str, 
         player_id: str
-    ) -> Tuple[str, str]:
-        """
-        Save video file to storage
-        
-        Returns:
-            Tuple of (storage_path, stored_filename)
-        """
+    ) -> tuple[str, str]:
+        """Save video file and return (storage_path, stored_filename)"""
         pass
     
     @abstractmethod
     async def delete_video(self, storage_path: str) -> bool:
-        """Delete video file from storage"""
+        """Delete video file"""
         pass
     
     @abstractmethod
     def get_file_path(self, storage_path: str) -> Path:
-        """Get absolute path for a stored file"""
+        """Get absolute path for stored file"""
         pass
     
     @abstractmethod
     def file_exists(self, storage_path: str) -> bool:
-        """Check if file exists in storage"""
+        """Check if file exists"""
         pass
 
 
@@ -200,77 +183,24 @@ class IAnalysisService(ABC):
 
 
 class IMatchService(ABC):
-    """
-    Interface for Match business logic
-    Implements UC-04 business rules
-    """
+    """Interface for match business operations"""
     
     @abstractmethod
-    async def get_match_overview(self, match_id: int) -> Dict[str, Any]:
-        """
-        Get match overview with player statistics
-        Implements UC-04 Success Scenario S1
-        
-        Returns:
-            Dictionary containing match info and player hit counts
-            
-        Raises:
-            MatchNotFoundException: If match doesn't exist
-            DataUnavailableException: If hit data is not available (UC-04 F1)
-        """
+    async def get_match_overview(self, match_id: int) -> dict:
+        """Get match overview with player statistics"""
         pass
     
     @abstractmethod
-    async def get_match_statistics_by_set(
-        self, 
-        match_id: int, 
-        set_number: int
-    ) -> Dict[str, Any]:
-        """
-        Get match statistics filtered by set
-        Implements UC-04 Success Scenario S2
-        
-        Raises:
-            MatchNotFoundException: If match doesn't exist
-            InvalidSetNumberException: If set number is invalid
-            DataUnavailableException: If hit data is not available
-        """
+    async def get_match_statistics_by_set(self, match_id: int, set_number: int) -> dict:
+        """Get match statistics filtered by set"""
         pass
     
     @abstractmethod
-    async def get_hit_comparison_chart_data(self, match_id: int) -> Dict[str, Any]:
-        """
-        Get data formatted for visual hit comparison chart
-        Implements UC-04 Success Scenario S3
-        
-        Returns:
-            Dictionary formatted for chart visualization (bar chart)
-            
-        Raises:
-            MatchNotFoundException: If match doesn't exist
-            DataUnavailableException: If hit data is not available
-        """
+    async def get_hit_comparison_chart_data(self, match_id: int) -> dict:
+        """Get data for hit comparison chart"""
         pass
     
     @abstractmethod
-    async def get_player_hit_count(
-        self, 
-        match_id: int, 
-        player_identifier: str
-    ) -> int:
-        """
-        Get hit count for a specific player in a match
-        
-        Args:
-            match_id: ID of the match
-            player_identifier: Player identifier from ML model (e.g., "player_1")
-            
-        Returns:
-            Total hit count for the player
-            
-        Raises:
-            MatchNotFoundException: If match doesn't exist
-            PlayerInMatchNotFoundException: If player not found in match
-            DataUnavailableException: If hit data is not available
-        """
+    async def get_player_hit_count(self, match_id: int, player_identifier: str) -> int:
+        """Get hit count for specific player"""
         pass

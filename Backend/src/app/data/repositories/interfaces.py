@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Optional, List
 from .base_repository import BaseRepository
 
@@ -11,8 +11,8 @@ from ..models.video_model import VideoModel
 from ...domain.analysis import Analysis
 from ..models.analysis_model import AnalysisModel
 
-from ...domain.match import Match, MatchPlayer, SummaryMetrics
-from ..models.match_model import MatchModel, MatchPlayerModel, SummaryMetricsModel
+from ...domain.match import Match, MatchPlayer, SummaryMetrics, Heatmap, Rally, Hits
+from ..models.match_model import MatchModel, MatchPlayerModel, SummaryMetricsModel, HeatmapModel, RallyModel, HitsModel
 
 class IPlayerRepository(BaseRepository[Player, PlayerModel]):
     """
@@ -107,3 +107,20 @@ class ISummaryMetricsRepository(BaseRepository[SummaryMetrics, SummaryMetricsMod
         """Get summary metrics filtered by set number - UC-04 S2"""
         pass
     
+class IHitsRepository(BaseRepository[Hits, HitsModel], ABC):
+    """Hits repository interface - standalone entity"""
+    pass
+
+
+class IRallyRepository(BaseRepository[Rally, RallyModel], ABC):
+    """Rally repository interface"""
+    
+    @abstractmethod
+    async def get_by_summary_metrics_id(self, summary_metrics_id: int) -> List[Rally]:
+        """Get all rallies for a summary metrics record"""
+        pass
+
+
+class IHeatmapRepository(BaseRepository[Heatmap, HeatmapModel], ABC):
+    """Heatmap repository interface - standalone entity"""
+    pass
