@@ -17,6 +17,10 @@ class PlayerHitCountDto(BaseModel):
         description="Player identifier from ML model (e.g., 'player_1')"
     )
     total_hits: int = Field(..., ge=0, description="Total number of hits by this player")
+    overhead_hits: int = Field(0, ge=0, description="Number of overhead/smash hits")
+    lob: int = Field(0, ge=0, description="Number of lob hits")
+    serve: int = Field(0, ge=0, description="Number of serve hits")
+    groundstrokes: int = Field(0, ge=0, description="Number of groundstroke hits")
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -41,29 +45,6 @@ class MatchSummaryDto(BaseModel):
         description="List of players with their hit counts"
     )
     created_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
-
-
-class SetFilterDto(BaseModel):
-    """
-    DTO for filtering statistics by set
-    Implements UC-04 Success Scenario S2
-    """
-    set_number: Optional[int] = Field(
-        None, 
-        ge=1, 
-        description="Filter by specific set number (1, 2, 3, etc.)"
-    )
-
-
-class HitComparisonChartDto(BaseModel):
-    """
-    DTO for visual hit comparison chart data
-    Implements UC-04 Success Scenario S3
-    """
-    chart_type: str = Field(default="bar", description="Type of chart (bar, pie, etc.)")
-    players: List[PlayerHitCountDto]
     
     model_config = ConfigDict(from_attributes=True)
 

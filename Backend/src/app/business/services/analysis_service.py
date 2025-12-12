@@ -1,12 +1,12 @@
-from typing import Dict, Any, Optional
+from typing import Optional
 from datetime import datetime
 from pathlib import Path
 
+from .interfaces import IAnalysisService
 from ...domain.analysis import Analysis
 from ...domain.match import Match, MatchPlayer, SummaryMetrics, Hits, Rally, Heatmap
 from ...domain.video import VideoStatus
 from ..exceptions import (
-    AnalysisNotFoundException,
     VideoNotFoundException,
     AnalysisException
 )
@@ -20,10 +20,10 @@ from ...data.repositories.interfaces import (
     IHeatmapRepository,
     IVideoRepository
 )
-from .ml_service import MLService, MLAnalysisResult
+from .ml_service import MLService, MLAnalysisResult, TRACKED_PLAYERS
 
 
-class AnalysisService:
+class AnalysisService(IAnalysisService):
     """
     Analysis service - Orchestrates the creation and execution of video analysis.
     
@@ -32,6 +32,8 @@ class AnalysisService:
     2. Runs ML inference via MLService
     3. Stores results in the database
     4. Updates video status throughout
+    
+    Note: Only player_1 and player_2 are tracked (near-side of court).
     """
     
     def __init__(
@@ -69,8 +71,11 @@ class AnalysisService:
         Creates:
         1. Analysis entity
         2. Match entity
-        3. 4 MatchPlayer entities (player_1 through player_4)
+        3. 2 MatchPlayer entities (player_1 and player_2 ONLY)
         4. Updates Video status to PROCESSING
+        
+        Note: Only near-side players are created. Far-side players 
+        (player_3, player_4) don't get meaningful tracking data from ML.
         
         Note: SummaryMetrics, Hits, Heatmap created later after ML analysis.
         
@@ -106,12 +111,13 @@ class AnalysisService:
             created_analysis.match_id = created_match.id
             updated_analysis = await self._analysis_repo.update(created_analysis)
             
-            # Step 4: Create 4 MatchPlayer entities
-            for i in range(1, 5):
+            # Step 4: Create MatchPlayer entities - only for tracked players
+            # Uses TRACKED_PLAYERS constant from ml_service: ["player_1", "player_2"]
+            for player_identifier in TRACKED_PLAYERS:
                 match_player = MatchPlayer(
                     id=None,
                     match_id=created_match.id,
-                    player_identifier=f"player_{i}",
+                    player_identifier=player_identifier,
                     created_at=None,
                     updated_at=None
                 )
@@ -173,11 +179,14 @@ class AnalysisService:
         """
         Store ML analysis results in the database.
         
-        Flow for each player:
-        1. Create Hits record (standalone) for player_1/player_2 only
-        2. Create Heatmap record (standalone) for player_1/player_2 only
+        Flow for each player (player_1 and player_2 only):
+        1. Create Hits record (standalone)
+        2. Create Heatmap record (standalone)
         3. Create SummaryMetrics with hits_id and heatmap_id FKs
         4. Create Rally records with summary_metrics_id (only for player_1)
+        
+        Note: Since we now only create 2 MatchPlayer entities, all players
+        in match_players will have detailed data.
         
         Args:
             match_id: ID of the match
@@ -186,6 +195,8 @@ class AnalysisService:
         try:
             match_players = await self._match_player_repo.get_by_match_id(match_id)
             
+            rallies_stored = False
+            
             for match_player in match_players:
                 player_id = match_player.player_identifier
                 player_stats = ml_result.player_stats.get(player_id)
@@ -193,37 +204,36 @@ class AnalysisService:
                 hits_id = None
                 heatmap_id = None
                 
-                # Only player_1 and player_2 get detailed data
-                if player_id in ["player_1", "player_2"]:
-                    # Step 1: Create Hits record (standalone)
-                    if player_stats:
-                        hits = Hits(
+                # All players now get detailed data (since we only create player_1, player_2)
+                # Step 1: Create Hits record (standalone)
+                if player_stats:
+                    hits = Hits(
+                        id=None,
+                        overhead_hits=player_stats.overhead_hits,
+                        lob=player_stats.lob,
+                        serve=player_stats.serve,
+                        groundstrokes=player_stats.groundstrokes,
+                        created_at=None,
+                        updated_at=None
+                    )
+                    created_hits = await self._hits_repo.create(hits)
+                    hits_id = created_hits.id
+                
+                # Step 2: Create Heatmap record (standalone)
+                heatmap_data = ml_result.heatmaps.get(player_id)
+                if heatmap_data and heatmap_data.image_path.exists():
+                    image_bytes = self._ml_service.read_heatmap_binary(
+                        heatmap_data.image_path
+                    )
+                    if image_bytes:
+                        heatmap = Heatmap(
                             id=None,
-                            overhead_hits=player_stats.overhead_hits,
-                            lob=player_stats.lob,
-                            serve=player_stats.serve,
-                            backhand=player_stats.backhand,
+                            heatmap=image_bytes,
                             created_at=None,
                             updated_at=None
                         )
-                        created_hits = await self._hits_repo.create(hits)
-                        hits_id = created_hits.id
-                    
-                    # Step 2: Create Heatmap record (standalone)
-                    heatmap_data = ml_result.heatmaps.get(player_id)
-                    if heatmap_data and heatmap_data.image_path.exists():
-                        image_bytes = self._ml_service.read_heatmap_binary(
-                            heatmap_data.image_path
-                        )
-                        if image_bytes:
-                            heatmap = Heatmap(
-                                id=None,
-                                heatmap=image_bytes,
-                                created_at=None,
-                                updated_at=None
-                            )
-                            created_heatmap = await self._heatmap_repo.create(heatmap)
-                            heatmap_id = created_heatmap.id
+                        created_heatmap = await self._heatmap_repo.create(heatmap)
+                        heatmap_id = created_heatmap.id
                 
                 # Step 3: Create SummaryMetrics with FKs
                 total_hits = player_stats.total_hits if player_stats else 0
@@ -239,8 +249,9 @@ class AnalysisService:
                 )
                 created_metrics = await self._metrics_repo.create(metrics)
                 
-                # Step 4: Store rallies (only for player_1 to avoid duplication)
-                if player_id == "player_1":
+                # Step 4: Store rallies once (match-level, not player-specific)
+                # Store under first player to avoid duplication
+                if not rallies_stored:
                     for rally_data in ml_result.rallies:
                         rally = Rally(
                             id=None,
@@ -250,6 +261,7 @@ class AnalysisService:
                             updated_at=None
                         )
                         await self._rally_repo.create(rally)
+                    rallies_stored = True
                         
         except Exception as e:
             raise AnalysisException(f"Failed to store analysis results: {str(e)}")
@@ -272,13 +284,3 @@ class AnalysisService:
                 status=VideoStatus.ERROR
             )
     
-    async def get_analysis_by_video(self, video_id: int) -> Analysis:
-        """Get analysis for a video"""
-        analysis = await self._analysis_repo.get_by_video_id(video_id)
-        if not analysis:
-            raise AnalysisNotFoundException(f"No analysis found for video {video_id}")
-        return analysis
-    
-    async def get_analysis_by_match(self, match_id: int) -> Optional[Analysis]:
-        """Get analysis by match ID"""
-        return await self._analysis_repo.get_by_match_id(match_id)

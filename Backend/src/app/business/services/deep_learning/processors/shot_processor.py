@@ -29,8 +29,12 @@ SHOT_COLORS = {
     'serve': (0, 165, 255),
     'overhead': (0, 255, 255),
     'lob': (255, 0, 255),
+    'groundstrokes': (0, 200, 100),
     'other': (128, 128, 128)
 }
+
+# Side labels
+SIDE_LABELS = {0: 'left', 1: 'right'}
 
 
 class ShotClassificationProcessor:
@@ -39,6 +43,8 @@ class ShotClassificationProcessor:
     
     Integrates pose detection, ball tracking, and shot classification
     into a unified processing pipeline.
+    
+    Handles multi-task model that predicts both shot type and player side.
     """
     
     def __init__(
@@ -52,19 +58,6 @@ class ShotClassificationProcessor:
         stride: int = 8, 
         classifier_resolution: int = 128
     ):
-        """
-        Initialize the processor.
-        
-        Args:
-            shot_model_path: Path to shot classification model
-            yolo_pose_path: Path to YOLO pose model
-            tracknet_path: Path to TrackNet model for ball detection
-            device: Compute device (auto-detected if None)
-            confidence_threshold: Classification confidence threshold
-            window_size: Number of frames in sliding window
-            stride: Window stride for classification
-            classifier_resolution: Resolution for classifier input
-        """
         self.device = device or self._get_device()
         self.window_size = window_size
         self.stride = stride
@@ -99,7 +92,6 @@ class ShotClassificationProcessor:
     
     @staticmethod
     def _get_device() -> torch.device:
-        """Get best available compute device."""
         if torch.cuda.is_available():
             return torch.device("cuda")
         elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
@@ -112,17 +104,6 @@ class ShotClassificationProcessor:
         fps: float = 30.0,
         yolo_resolution: Tuple[int, int] = (640, 360)
     ) -> Dict:
-        """
-        Process video frames and return shot events.
-        
-        Args:
-            video_frames: List of BGR frames
-            fps: Video frame rate
-            yolo_resolution: Resolution for YOLO inference
-            
-        Returns:
-            Dict with 'shot_events', 'ball_positions', 'player_stats', 'frame_predictions', 'frame_players'
-        """
         print(f"\nProcessing {len(video_frames)} frames for shot classification...")
         
         orig_height, orig_width = video_frames[0].shape[:2]
@@ -130,48 +111,37 @@ class ShotClassificationProcessor:
         scale_orig_to_yolo_x = yolo_width / orig_width
         scale_orig_to_yolo_y = yolo_height / orig_height
         
-        # Compute background for ball tracker
         if self.ball_tracker:
             self.ball_tracker.compute_background(video_frames)
         
-        # Buffers
         frame_buffer = deque(maxlen=self.window_size)
         pose_buffer = deque(maxlen=self.window_size)
         
-        # Frame-level storage
         frame_ball_map: Dict[int, Optional[Tuple[int, int]]] = {}
         frame_players_map: Dict[int, List[Dict]] = {}
         frame_active_map: Dict[int, Optional[int]] = {}
-        predictions: Dict[int, Tuple[str, int, float]] = {}
+        predictions: Dict[int, Tuple[str, int, float, str]] = {}
         
         prev_players = None
         last_shot_global = -9999
         
         for frame_idx, frame in enumerate(tqdm(video_frames, desc="Shot classification")):
-            # Resize and convert
             frame_yolo = cv2.resize(frame, (yolo_width, yolo_height))
             frame_rgb = cv2.cvtColor(frame_yolo, cv2.COLOR_BGR2RGB)
             
-            # Pose detection
             results = self.pose_model(frame_yolo, verbose=False)
             
             players = self._extract_players(
-                results, 
-                scale_orig_to_yolo_x, 
-                scale_orig_to_yolo_y,
-                yolo_width, 
-                yolo_height
+                results, scale_orig_to_yolo_x, scale_orig_to_yolo_y, yolo_width, yolo_height
             )
             
             self.tracker.update(players)
             self._update_player_positions(players)
             
-            # Ball tracking
             ball_pos = self._track_ball(frame, orig_width, orig_height)
             frame_ball_map[frame_idx] = ball_pos
             frame_players_map[frame_idx] = players
             
-            # Determine active player
             active_idx, active_id = self._get_active_player(players, prev_players)
             frame_active_map[frame_idx] = active_id
             
@@ -183,7 +153,6 @@ class ShotClassificationProcessor:
             frame_buffer.append(torch.from_numpy(frame_rgb))
             pose_buffer.append(torch.from_numpy(active_kp))
             
-            # Classify when buffer is full
             if len(frame_buffer) == self.window_size and frame_idx % self.stride == 0:
                 shot_info = self._classify_window(
                     frame_buffer, pose_buffer, frame_idx, fps,
@@ -191,29 +160,27 @@ class ShotClassificationProcessor:
                 )
                 
                 if shot_info:
-                    shot_frame, pred_label, shooter_id, conf = shot_info
+                    shot_frame, pred_label, shooter_id, conf, side_pred = shot_info
                     last_shot_global = shot_frame
                     
-                    # Update stats
                     if shooter_id not in self.player_stats:
                         self.player_stats[shooter_id] = {}
                     self.player_stats[shooter_id][pred_label] = \
                         self.player_stats[shooter_id].get(pred_label, 0) + 1
                     
-                    # Record event
                     self.shot_events.append({
                         'frame': shot_frame,
                         'shot_type': pred_label,
                         'player_id': shooter_id,
-                        'confidence': conf
+                        'confidence': conf,
+                        'player_side': side_pred
                     })
                     
-                    # Store prediction for display
                     display_duration = self.stride * 3
                     for offset in range(display_duration):
                         target_idx = shot_frame + offset
                         if target_idx >= 0:
-                            predictions[target_idx] = (pred_label, shooter_id, conf)
+                            predictions[target_idx] = (pred_label, shooter_id, conf, side_pred)
             
             prev_players = players
         
@@ -227,15 +194,7 @@ class ShotClassificationProcessor:
             'frame_players': frame_players_map,
         }
     
-    def _extract_players(
-        self, 
-        results, 
-        scale_x: float, 
-        scale_y: float,
-        yolo_w: int, 
-        yolo_h: int
-    ) -> List[Dict]:
-        """Extract player data from YOLO pose results."""
+    def _extract_players(self, results, scale_x: float, scale_y: float, yolo_w: int, yolo_h: int) -> List[Dict]:
         players = []
         
         if results[0].keypoints is None or len(results[0].keypoints.data) == 0:
@@ -246,15 +205,13 @@ class ShotClassificationProcessor:
         
         for i in range(len(keypoints_data)):
             kp = keypoints_data[i]
-            if np.mean(kp[:, 2]) > 0.3:  # Confidence threshold
-                # Scale bbox to original resolution
+            if np.mean(kp[:, 2]) > 0.3:
                 scaled_bbox = boxes[i].copy()
                 scaled_bbox[0] /= scale_x
                 scaled_bbox[1] /= scale_y
                 scaled_bbox[2] /= scale_x
                 scaled_bbox[3] /= scale_y
                 
-                # Normalize keypoints
                 kp_proc = kp.copy()
                 if np.max(kp_proc) > 1.0:
                     kp_proc[:, 0] /= yolo_w
@@ -270,7 +227,6 @@ class ShotClassificationProcessor:
         return players
     
     def _update_player_positions(self, players: List[Dict]) -> None:
-        """Update player position tracking (left/right side)."""
         for p in players:
             pid = p.get('id')
             if pid is not None:
@@ -278,13 +234,7 @@ class ShotClassificationProcessor:
                 cx = (bbox[0] + bbox[2]) / 2
                 self.player_positions[pid] = cx
     
-    def _track_ball(
-        self, 
-        frame: np.ndarray, 
-        orig_w: int, 
-        orig_h: int
-    ) -> Optional[Tuple[int, int]]:
-        """Track ball in frame using TrackNet."""
+    def _track_ball(self, frame: np.ndarray, orig_w: int, orig_h: int) -> Optional[Tuple[int, int]]:
         if not self.ball_tracker:
             return None
         
@@ -303,19 +253,13 @@ class ShotClassificationProcessor:
             return self.smart_ball_tracker.update(detected_ball)
         return detected_ball
     
-    def _get_active_player(
-        self, 
-        players: List[Dict], 
-        prev_players: Optional[List[Dict]]
-    ) -> Tuple[Optional[int], Optional[int]]:
-        """Determine the most active player based on motion."""
+    def _get_active_player(self, players: List[Dict], prev_players: Optional[List[Dict]]) -> Tuple[Optional[int], Optional[int]]:
         if not players:
             return None, None
         
         if len(players) == 1:
             return 0, players[0].get('id')
         
-        # Score by motion
         motion_scores = []
         for p in players:
             prev_kp = None
@@ -330,33 +274,28 @@ class ShotClassificationProcessor:
         return active_idx, players[active_idx].get('id')
     
     def _classify_window(
-        self,
-        frame_buffer: deque,
-        pose_buffer: deque,
-        frame_idx: int,
-        fps: float,
-        last_shot_global: int,
-        frame_ball_map: Dict,
-        frame_players_map: Dict,
-        frame_active_map: Dict
-    ) -> Optional[Tuple[int, str, int, float]]:
-        """Classify shot from current window."""
+        self, frame_buffer: deque, pose_buffer: deque, frame_idx: int, fps: float,
+        last_shot_global: int, frame_ball_map: Dict, frame_players_map: Dict, frame_active_map: Dict
+    ) -> Optional[Tuple[int, str, int, float, str]]:
         clip = torch.stack(list(frame_buffer)).permute(0, 3, 1, 2)
         clip_tensor = preprocess_clip(
-            clip, 
-            clip_len=self.window_size,
+            clip, clip_len=self.window_size,
             resolution=(self.classifier_resolution, self.classifier_resolution)
         ).to(self.device)
         
         pose_tensor = torch.stack(list(pose_buffer)).unsqueeze(0).float().to(self.device)
         
         with torch.no_grad():
-            outputs = self.model(clip_tensor, pose_tensor)
-            probs = torch.softmax(outputs, dim=1)
+            shot_outputs, side_outputs = self.model(clip_tensor, pose_tensor)
+            
+            probs = torch.softmax(shot_outputs, dim=1)
             confidence, pred_idx = torch.max(probs, 1)
             
             pred_label = self.idx_to_label[pred_idx.item()]
             conf = confidence.item()
+            
+            side_prob = torch.sigmoid(side_outputs).item()
+            side_pred = SIDE_LABELS[1] if side_prob > 0.5 else SIDE_LABELS[0]
             
             if conf < self.confidence_threshold and self.other_class_idx >= 0:
                 pred_label = self.idx_to_label.get(self.other_class_idx, 'other')
@@ -364,25 +303,17 @@ class ShotClassificationProcessor:
             if pred_label != "other" and conf > 0.5:
                 shot_frame_idx = frame_idx - self.window_size // 2
                 
-                # Minimum gap between shots
                 if shot_frame_idx - last_shot_global >= fps:
                     shooter_id = self._find_shooter(
                         shot_frame_idx, frame_ball_map, frame_players_map, frame_active_map
                     )
                     
                     if shooter_id is not None:
-                        return (shot_frame_idx, pred_label, shooter_id, conf)
+                        return (shot_frame_idx, pred_label, shooter_id, conf, side_pred)
         
         return None
     
-    def _find_shooter(
-        self,
-        shot_frame_idx: int,
-        frame_ball_map: Dict,
-        frame_players_map: Dict,
-        frame_active_map: Dict
-    ) -> Optional[int]:
-        """Find the player who hit the shot based on ball proximity."""
+    def _find_shooter(self, shot_frame_idx: int, frame_ball_map: Dict, frame_players_map: Dict, frame_active_map: Dict) -> Optional[int]:
         shot_ball_pos = frame_ball_map.get(shot_frame_idx)
         shot_players = frame_players_map.get(shot_frame_idx)
         
@@ -401,15 +332,10 @@ class ShotClassificationProcessor:
             if shooter_id is not None:
                 return shooter_id
         
-        # Fallback to active player
         return frame_active_map.get(shot_frame_idx)
     
-    def draw_shot_overlay(
-        self, 
-        frames: List[np.ndarray], 
-        shot_data: Dict
-    ) -> List[np.ndarray]:
-        """Draw shot classification overlay on frames."""
+    def draw_shot_overlay(self, frames: List[np.ndarray], shot_data: Dict) -> List[np.ndarray]:
+        """Draw shot classification overlay on frames. Only draws bbox around player making shot."""
         output_frames = []
         predictions = shot_data.get('frame_predictions', {})
         ball_positions = shot_data.get('ball_positions', {})
@@ -423,13 +349,17 @@ class ShotClassificationProcessor:
             if ball_pos:
                 cv2.circle(frame, ball_pos, 5, (0, 0, 255), -1)
             
-            # Draw shot prediction
+            # Draw shot prediction - bbox around player making the shot
             pred_data = predictions.get(frame_idx)
             if pred_data:
-                shot_type, shooter_id, conf = pred_data
+                if len(pred_data) == 4:
+                    shot_type, shooter_id, conf, side_pred = pred_data
+                else:
+                    shot_type, shooter_id, conf = pred_data
+                    side_pred = None
+                    
                 color = SHOT_COLORS.get(shot_type, (255, 255, 255))
                 
-                # Find and highlight shooter
                 players = frame_players.get(frame_idx, [])
                 for p in players:
                     if p.get('id') == shooter_id:
@@ -437,78 +367,23 @@ class ShotClassificationProcessor:
                         x1, y1, x2, y2 = map(int, bbox)
                         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
                         
-                        label = shot_type.upper()
+                        if side_pred:
+                            label = f"{shot_type.upper()} ({side_pred})"
+                        else:
+                            label = shot_type.upper()
+                            
                         font = cv2.FONT_HERSHEY_SIMPLEX
-                        (tw, th), _ = cv2.getTextSize(label, font, 1.0, 2)
+                        (tw, th), _ = cv2.getTextSize(label, font, 0.8, 2)
                         cv2.rectangle(frame, (x1, y1 - th - 10), (x1 + tw + 10, y1), color, -1)
-                        cv2.putText(frame, label, (x1 + 5, y1 - 5), font, 1.0, (255, 255, 255), 2)
+                        cv2.putText(frame, label, (x1 + 5, y1 - 5), font, 0.8, (255, 255, 255), 2)
                         break
             
             output_frames.append(frame)
         
-        # Draw stats overlay
-        self._draw_stats_on_frames(output_frames)
-        
         return output_frames
     
-    def _draw_stats_on_frames(self, frames: List[np.ndarray]) -> None:
-        """Draw player stats overlay on frames."""
-        if not frames:
-            return
-        
-        h, w = frames[0].shape[:2]
-        center_x = w / 2
-        
-        for frame in frames:
-            left_stats, right_stats = {}, {}
-            
-            # Split stats by player position
-            for pid, p_stats in self.player_stats.items():
-                pos = self.player_positions.get(pid, center_x)
-                target = left_stats if pos < center_x else right_stats
-                for label, count in p_stats.items():
-                    target[label] = target.get(label, 0) + count
-            
-            self._draw_stats_box(frame, left_stats, "Player Left", 20, 40)
-            self._draw_stats_box(frame, right_stats, "Player Right", w - 220, 40)
-    
-    def _draw_stats_box(
-        self, 
-        frame: np.ndarray, 
-        stats: Dict[str, int], 
-        title: str, 
-        x: int, 
-        y: int
-    ) -> None:
-        """Draw a stats box on the frame."""
-        box_h = 30 + (len(stats) + 1) * 20 if stats else 60
-        
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (x-10, y-30), (x+200, y + box_h - 30), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
-        
-        cv2.putText(frame, title, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-        
-        y_off = 25
-        total = sum(stats.values())
-        cv2.putText(frame, f"Total: {total}", (x, y + y_off), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
-        y_off += 20
-        
-        for label, count in sorted(stats.items(), key=lambda x: x[1], reverse=True):
-            c = SHOT_COLORS.get(label, (255, 255, 255))
-            cv2.putText(frame, f"{label}: {count}", (x, y + y_off), cv2.FONT_HERSHEY_SIMPLEX, 0.6, c, 1)
-            y_off += 20
-    
     def export_shots_csv(self, output_path: str) -> None:
-        """Export shot events to CSV."""
         ensure_dir(output_path)
         df = pd.DataFrame(self.shot_events)
         df.to_csv(output_path, index=False)
         print(f"Exported shots to: {output_path}")
-    
-    def reset(self) -> None:
-        """Reset processor state for new video."""
-        self.tracker.reset()
-        self.shot_events.clear()
-        self.player_stats.clear()
-        self.player_positions.clear()

@@ -1,7 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, auth
 from typing import Optional, Dict, Any
-import os
 from ..business.exceptions import AuthenticationException
 from ..config import get_settings, get_firebase_config
 

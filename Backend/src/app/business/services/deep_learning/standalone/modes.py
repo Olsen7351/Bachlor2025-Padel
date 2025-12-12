@@ -2,7 +2,7 @@
 Standalone Mode Runners.
 
 Contains individual runners for each pipeline mode:
-- Player tracking
+- Player tracking (with progress indicator)
 - Rally detection  
 - Shot classification
 - Heatmap generation
@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from typing import Optional
+from tqdm import tqdm
 
 from ..config import PipelineConfig
 from ..trackers import RallyTracker
@@ -65,6 +66,8 @@ def run_standalone_player_tracker(config: PipelineConfig, args) -> None:
     """
     Run standalone player tracking with YOLOv8 + ByteTrack.
     
+    Now includes progress indicator showing frame count.
+    
     Args:
         config: Pipeline configuration
         args: Argparse namespace (for backward compatibility)
@@ -81,6 +84,8 @@ def run_standalone_player_tracker(config: PipelineConfig, args) -> None:
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
     if not fps or fps <= 1:
         fps = 25.0
     
@@ -112,15 +117,22 @@ def run_standalone_player_tracker(config: PipelineConfig, args) -> None:
         conf=config.player_tracking.confidence,
         classes=[0], 
         tracker=config.player_tracking.tracker_config, 
-        device=config.player_tracking.device
+        device=config.player_tracking.device,
+        verbose=False  # Suppress per-frame YOLO output
     )
     if config.player_tracking.image_size:
         track_kwargs["imgsz"] = config.player_tracking.image_size
 
     print(f"Running player tracking on {video_path}...")
+    print(f"Total frames: {total_frames}, Resolution: {width}x{height}, FPS: {fps:.1f}")
+
+    # Create progress bar
+    pbar = tqdm(total=total_frames, desc="Player tracking", unit="frame")
 
     for result in model.track(**track_kwargs):
         frame_idx += 1
+        pbar.update(1)
+        
         frame = result.orig_img
 
         if result.boxes is None or len(result.boxes) == 0:
@@ -172,13 +184,14 @@ def run_standalone_player_tracker(config: PipelineConfig, args) -> None:
         draw_player_annotations(frame, xyxy, ids, feet_px, feet_m)
         writer.write(frame)
 
+    pbar.close()
     writer.release()
     cap.release()
 
     df = pd.DataFrame(rows, columns=["frame", "track_id", "x_px", "y_px", "x_m", "y_m", "confidence"])
     df.to_csv(out_csv, index=False)
 
-    print("Done!")
+    print("\nDone!")
     print(f"- Annotated video: {out_video}")
     print(f"- Tracks CSV:      {out_csv}")
     
@@ -348,12 +361,17 @@ def run_shot_inference(config: PipelineConfig, args) -> None:
     print(f"\nReading video: {video_path}")
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
     frames = []
+    pbar = tqdm(total=total_frames, desc="Loading video", unit="frame")
     while True:
         ret, frame = cap.read()
         if not ret:
             break
         frames.append(frame)
+        pbar.update(1)
+    pbar.close()
     cap.release()
     
     print(f"Loaded {len(frames)} frames at {fps:.1f} FPS")
@@ -373,13 +391,15 @@ def run_shot_inference(config: PipelineConfig, args) -> None:
     shot_data = processor.process_video(frames, fps=fps, yolo_resolution=config.shot.yolo_resolution)
     
     # Draw overlay
+    print("Drawing shot overlays...")
     output_frames = processor.draw_shot_overlay(frames, shot_data)
     
     # Save video
     ensure_dir(output_path)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (frames[0].shape[1], frames[0].shape[0]))
-    for frame in output_frames:
+    
+    for frame in tqdm(output_frames, desc="Writing video", unit="frame"):
         out.write(frame)
     out.release()
     

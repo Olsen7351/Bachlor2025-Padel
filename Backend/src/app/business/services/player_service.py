@@ -62,44 +62,7 @@ class PlayerService(IPlayerService):
             raise PlayerNotFoundException(f"Player with ID {player_id} not found")
         return player
     
-    async def get_player_by_email(self, email: str) -> Player:
-        """Get player by email"""
-        player = await self._player_repository.get_by_email(email)
-        if not player:
-            raise PlayerNotFoundException(f"Player with email {email} not found")
-        return player
-    
     async def get_all_players(self) -> List[Player]:
         """Get all players"""
         return await self._player_repository.get_all()
     
-    # async def update_player(self, player: Player) -> Player:
-    #     """Update existing player"""
-    #     if not player.id:
-    #         raise ValidationException("Player ID is required for update")
-        
-    #     # Check if player exists
-    #     existing_player = await self._player_repository.get_by_id(player.id)
-    #     if not existing_player:
-    #         raise PlayerNotFoundException(f"Player with ID {player.id} not found")
-        
-    #     # Validation
-    #     if not player.name or len(player.name.strip()) == 0:
-    #         raise ValidationException("Player name cannot be empty")
-        
-    #     if not player.email or len(player.email.strip()) == 0:
-    #         raise ValidationException("Email cannot be empty")
-        
-    #     # Check if another player with the same email exists
-    #     existing_player_by_email = await self._player_repository.get_by_email(player.email)
-    #     if existing_player_by_email and existing_player_by_email.id != player.id:
-    #         raise PlayerAlreadyExistsException(f"Another player with email {player.email} already exists")
-        
-    #     return await self._player_repository.update(player)
-    
-    # async def delete_player(self, player_id: str) -> bool:
-    #     """Delete player by ID"""
-    #     success = await self._player_repository.delete(player_id)
-    #     if not success:
-    #         raise PlayerNotFoundException(f"Player with ID {player_id} not found")
-    #     return success

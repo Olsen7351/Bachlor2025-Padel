@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Development setup script for Padel Analyzer
 Usage: python backend/src/scripts/dev-setup.py [start|stop|reset|status]

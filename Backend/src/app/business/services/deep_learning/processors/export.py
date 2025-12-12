@@ -79,46 +79,46 @@ def export_player_positions_csv(
     return output_csv
 
 
-def export_analysis_summary(
-    rallies: List,
-    shot_events: List[Dict],
-    player_stats: Dict[int, Dict[str, int]],
-    output_path: str,
-    fps: float = 30.0
-) -> str:
-    """
-    Export a summary of the analysis to a text/JSON file.
+# def export_analysis_summary(
+#     rallies: List,
+#     shot_events: List[Dict],
+#     player_stats: Dict[int, Dict[str, int]],
+#     output_path: str,
+#     fps: float = 30.0
+# ) -> str:
+#     """
+#     Export a summary of the analysis to a text/JSON file.
     
-    Args:
-        rallies: List of Rally objects
-        shot_events: List of shot event dicts
-        player_stats: Dict of player shot stats
-        output_path: Output file path
-        fps: Video frame rate
+#     Args:
+#         rallies: List of Rally objects
+#         shot_events: List of shot event dicts
+#         player_stats: Dict of player shot stats
+#         output_path: Output file path
+#         fps: Video frame rate
         
-    Returns:
-        Path to created file
-    """
-    ensure_dir(output_path)
+#     Returns:
+#         Path to created file
+#     """
+#     ensure_dir(output_path)
     
-    summary = {
-        'rally_count': len(rallies),
-        'total_shots': len(shot_events),
-        'player_stats': player_stats,
-    }
+#     summary = {
+#         'rally_count': len(rallies),
+#         'total_shots': len(shot_events),
+#         'player_stats': player_stats,
+#     }
     
-    if rallies:
-        durations = [r.duration_seconds(fps) for r in rallies]
-        summary['rally_stats'] = {
-            'total_time_sec': sum(durations),
-            'avg_duration_sec': np.mean(durations),
-            'max_duration_sec': max(durations),
-            'min_duration_sec': min(durations),
-        }
+#     if rallies:
+#         durations = [r.duration_seconds(fps) for r in rallies]
+#         summary['rally_stats'] = {
+#             'total_time_sec': sum(durations),
+#             'avg_duration_sec': np.mean(durations),
+#             'max_duration_sec': max(durations),
+#             'min_duration_sec': min(durations),
+#         }
     
-    import json
-    with open(output_path, 'w') as f:
-        json.dump(summary, f, indent=2)
+#     import json
+#     with open(output_path, 'w') as f:
+#         json.dump(summary, f, indent=2)
     
-    print(f"Exported analysis summary to: {output_path}")
-    return output_path
+#     print(f"Exported analysis summary to: {output_path}")
+#     return output_path
