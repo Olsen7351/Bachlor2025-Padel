@@ -1,1 +1,1 @@
-Hejsa!
+Alt frontend-relateret kan findes i denne mappe. Vamos!
