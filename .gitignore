@@ -175,7 +175,7 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
@@ -240,3 +240,4 @@ ML-Models/Classification_Model_Training_And_Annotation/old/
 Backend/src/app/business/services/deep_learning/models
 Backend/src/app/business/services/deep_learning/output_videos/
 Backend/src/app/business/services/deep_learning/input_videos/
+Backend/src/bachelorproject2025-firebase-adminsdk-fbsvc-2f7d5d28da.json

@@ -9,7 +9,7 @@ const UploadPage = () => {
     const navigate = useNavigate();
     const [fileName, setFileName] = useState<string | null>(null);
 
-    function handleAnalyse() {
+    function handleAnalysis() {
         alert("Analyse er i gang...");
         navigate("/id");
     }
@@ -43,7 +43,7 @@ const UploadPage = () => {
                                 <ArrowUpOnSquareStackIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                             </div>
 
-                            <input type="file" id="upload" className="sr-only" /*accept="video/*"*/ onChange={(e) => {
+                            <input type="file" id="upload" className="sr-only" accept="video/*" onChange={(e) => {
                                 const f = e.target.files?.[0];
                                 setFileName(f ? f.name : null);
                             }}/>
@@ -53,7 +53,7 @@ const UploadPage = () => {
                             {fileName ? fileName : "Ingen fil valgt endnu"}
                         </p>
 
-                        <button onClick={handleAnalyse} className={!fileName ? "hidden" : "text-2xl mt-6 bg-gradient-to-r from-green-300 to-blue-500 rounded-md p-4 px-8 w-64 hover:from-green-400 hover:to-blue-600 hover:cursor-pointer transition-colors"}>
+                        <button onClick={handleAnalysis} className={!fileName ? "hidden" : "text-2xl mt-6 bg-gradient-to-r from-green-300 to-blue-500 rounded-md p-4 px-8 w-64 hover:from-green-400 hover:to-blue-600 hover:cursor-pointer transition-colors"}>
                             Vamos
                         </button>
                     </div>
