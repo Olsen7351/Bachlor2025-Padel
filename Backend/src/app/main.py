@@ -36,32 +36,32 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """Application lifespan - startup and shutdown events"""
     # Startup
-    print("🚀 Starting up...")
+    print("Starting up...")
     try:
         await create_tables()
-        print("✅ Database tables created/verified")
+        print("Database tables created/verified")
         
         # Ensure upload directories exist
         import os
         os.makedirs(settings.video_upload_dir, exist_ok=True)
-        print(f"✅ Upload directory created/verified: {settings.video_upload_dir}")
+        print(f"Upload directory created/verified: {settings.video_upload_dir}")
         
         # Test Firebase configuration
         try:
             from app.auth.firebase_service import FirebaseService
             FirebaseService()
         except Exception as e:
-            print(f"⚠️  Firebase initialization failed: {e}")
-            print("   Make sure Firebase environment variables are set correctly")
+            print(f"Firebase initialization failed: {e}")
+            print("Make sure Firebase environment variables are set correctly")
         
     except Exception as e:
-        print(f"❌ Startup failed: {e}")
+        print(f"Startup failed: {e}")
         raise
 
     yield
 
     # Shutdown
-    print("👋 Shutting down...")
+    print("Shutting down...")
 
 
 app = FastAPI(

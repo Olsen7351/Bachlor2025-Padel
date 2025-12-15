@@ -36,10 +36,10 @@ class FirebaseService:
             
             cred = credentials.Certificate(service_account_info)
             firebase_admin.initialize_app(cred)
-            print(f"✅ Firebase initialized with environment variables for project: {settings.firebase_project_id}")
+            print(f" Firebase initialized with environment variables for project: {settings.firebase_project_id}")
             
         except Exception as e:
-            print(f"❌ Failed to initialize Firebase: {str(e)}")
+            print(f" Failed to initialize Firebase: {str(e)}")
             raise Exception(f"Failed to initialize Firebase: {str(e)}")
     
     async def verify_token(self, id_token: str) -> Dict[str, Any]:

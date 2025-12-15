@@ -233,7 +233,7 @@ class RallyTracker:
             )
             self.current_rally.ball_positions.append(position)
             self._transition(RallyState.SERVE)
-            print(f"  [Frame {frame_idx}] 🎾 Rally #{self.rally_counter} STARTING (velocity: {velocity:.1f})")
+            print(f"  [Frame {frame_idx}] Rally #{self.rally_counter} STARTING (velocity: {velocity:.1f})")
     
     def _handle_serve(self, frame_idx: int, position: Optional[Tuple[float, float]]):
         """SERVE: Confirming rally start."""
@@ -244,7 +244,7 @@ class RallyTracker:
         
         # Abort if ball disappears too long during serve
         if self.frames_without_ball > gap_during // 2:
-            print(f"  [Frame {frame_idx}] ❌ Rally #{self.rally_counter} aborted (ball lost during serve)")
+            print(f"  [Frame {frame_idx}] Rally #{self.rally_counter} aborted (ball lost during serve)")
             self._abort_rally()
             return
         
@@ -311,11 +311,11 @@ class RallyTracker:
         if duration_ok and distance_ok:
             self.completed_rallies.append(self.current_rally)
             duration_sec = self.current_rally.duration_seconds(self.fps)
-            print(f"  [Frame {frame_idx}] ✅ Rally #{self.current_rally.rally_id} ENDED - "
+            print(f"  [Frame {frame_idx}]  Rally #{self.current_rally.rally_id} ENDED - "
                   f"Duration: {duration_sec:.1f}s")
         else:
             reason = "too short" if not duration_ok else "not enough movement"
-            print(f"  [Frame {frame_idx}] ❌ Rally #{self.current_rally.rally_id} discarded ({reason})")
+            print(f"  [Frame {frame_idx}]  Rally #{self.current_rally.rally_id} discarded ({reason})")
         
         self.current_rally = None
         self._transition(RallyState.IDLE)

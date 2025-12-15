@@ -21,7 +21,7 @@ def run_command(cmd, check=True, capture_output=False):
         )
         return result
     except subprocess.CalledProcessError as e:
-        print(f"❌ Command failed: {cmd}")
+        print(f"Command failed: {cmd}")
         print(f"Error: {e}")
         return None
 
@@ -42,14 +42,14 @@ def find_project_root():
 
 def start_services():
     """Start database services only"""
-    print("🚀 Starting database services...")
+    print("Starting database services...")
     
     # Start database services only
     result = run_command("docker-compose up -d postgres redis")
     if not result:
         return False
     
-    print("⏳ Waiting for services to be ready...")
+    print("Waiting for services to be ready...")
     
     # Wait for PostgreSQL
     for i in range(30):
@@ -59,12 +59,12 @@ def start_services():
             capture_output=True
         )
         if result and result.returncode == 0:
-            print("✅ PostgreSQL is ready")
+            print("PostgreSQL is ready")
             break
         time.sleep(1)
-        print(f"⏳ Waiting for PostgreSQL... ({i+1}/30)")
+        print(f"Waiting for PostgreSQL... ({i+1}/30)")
     else:
-        print("❌ PostgreSQL failed to start")
+        print("PostgreSQL failed to start")
         return False
     
     # Check Redis
@@ -74,13 +74,13 @@ def start_services():
         capture_output=True
     )
     if result and result.returncode == 0:
-        print("✅ Redis is ready")
+        print("Redis is ready")
     
-    print("\n🎉 Database services are ready!")
-    print("📊 Services running:")
+    print("\nDatabase services are ready!")
+    print("Services running:")
     print("   - PostgreSQL: localhost:5432")
     print("   - Redis: localhost:6379")
-    print("\n💡 Next steps:")
+    print("\nNext steps:")
     print("   1. cd backend/src")
     print("   2. uv run python main.py")
     print("   3. Visit: http://localhost:8000/docs")
@@ -89,14 +89,14 @@ def start_services():
 
 def stop_services():
     """Stop all services"""
-    print("🛑 Stopping services...")
+    print("Stopping services...")
     run_command("docker-compose down")
-    print("✅ Services stopped")
+    print("Services stopped")
 
 def reset_services():
     """Reset all services (removes data!)"""
-    print("🔄 Resetting database...")
-    print("⚠️  This will delete all data!")
+    print("Resetting database...")
+    print("This will delete all data!")
     
     response = input("Are you sure? (y/N): ")
     if response.lower() != 'y':
@@ -104,25 +104,25 @@ def reset_services():
         return
     
     run_command("docker-compose down -v")
-    print("✅ Database reset")
+    print(" Database reset")
     
     # Restart services
     start_services()
 
 def show_status():
     """Show status of services"""
-    print("📊 Service Status:")
+    print("Service Status:")
     run_command("docker-compose ps")
 
 def main():
     # Find and change to project root
     project_root = find_project_root()
-    print(f"📁 Project root: {project_root}")
+    print(f"Project root: {project_root}")
     os.chdir(project_root)
     
     # Verify docker-compose.yml exists
     if not (project_root / "docker-compose.yml").exists():
-        print("❌ docker-compose.yml not found!")
+        print(" docker-compose.yml not found!")
         sys.exit(1)
     
     command = sys.argv[1] if len(sys.argv) > 1 else "start"
