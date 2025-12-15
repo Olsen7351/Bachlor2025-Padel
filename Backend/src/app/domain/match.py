@@ -36,16 +36,17 @@ class SummaryMetrics:
 @dataclass
 class Hits:
     """
-    Domain model for Hits entity - breakdown of hit types per player.
+    Hit type breakdown domain entity.
     
-    Note: Only populated for player_1 and player_2 (the players on the 
-    analyzed side of the court). player_3 and player_4 won't have hit data.
+    Note: 'groundstrokes' represents combined forehand and backhand hits.
+    The ML model doesn't distinguishes between forehand and backhand,
+    classifying them together as 'groundstrokes'.
     """
     id: Optional[int]
     overhead_hits: int = 0
     lob: int = 0
     serve: int = 0
-    backhand: int = 0
+    groundstrokes: int = 0
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

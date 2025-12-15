@@ -1,5 +1,3 @@
-"""Hits repository implementation"""
-
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -26,7 +24,7 @@ class HitsRepository(IHitsRepository):
             overhead_hits=model.overhead_hits,
             lob=model.lob,
             serve=model.serve,
-            backhand=model.backhand,
+            groundstrokes=model.groundstrokes,  # Changed from backhand
             created_at=model.created_at,
             updated_at=model.updated_at
         )
@@ -38,7 +36,7 @@ class HitsRepository(IHitsRepository):
             overhead_hits=domain.overhead_hits,
             lob=domain.lob,
             serve=domain.serve,
-            backhand=domain.backhand,
+            groundstrokes=domain.groundstrokes,  # Changed from backhand
             created_at=domain.created_at,
             updated_at=domain.updated_at
         )
@@ -63,7 +61,7 @@ class HitsRepository(IHitsRepository):
             overhead_hits=entity.overhead_hits,
             lob=entity.lob,
             serve=entity.serve,
-            backhand=entity.backhand,
+            groundstrokes=entity.groundstrokes,  # Changed from backhand
             created_at=datetime.now(),
             updated_at=datetime.now()
         )
@@ -84,7 +82,7 @@ class HitsRepository(IHitsRepository):
             model.overhead_hits = entity.overhead_hits
             model.lob = entity.lob
             model.serve = entity.serve
-            model.backhand = entity.backhand
+            model.groundstrokes = entity.groundstrokes  # Changed from backhand
             model.updated_at = datetime.now()
             await self.session.flush()
             await self.session.refresh(model)

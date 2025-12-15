@@ -1,38 +1,32 @@
-"""Video controller - Presentation layer (FastAPI endpoints)"""
-
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, BackgroundTasks, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated, Optional
+from typing import Annotated
 from pathlib import Path
 
-from app.presentation.dtos.video_dto import (
-    VideoUploadResponse,
-    VideoErrorResponse,
-    VideoStatusDto
-)
-from ...business.services.video_service import VideoService
-from ...business.services.file_storage import FileStorageService
-from ...business.services.video_converter import VideoConverter
-from ...data.repositories.video_repository import VideoRepository
-from ...data.connection import get_db_session
-from ...auth.dependencies import get_current_user
-from ...domain.player import Player
+# Business layer
+from ...business.services.interfaces import IVideoService
 from ...business.exceptions import (
     InvalidFileFormatException,
     FileTooLargeException,
     StorageException,
 )
+from ...domain.player import Player
+from ..dtos.video_dto import (
+    VideoUploadResponse,
+    VideoErrorResponse,
+    VideoStatusDto
+)
+
+# DI container
+from ...dependencies import get_video_service
+
+# Database session - needed for commit/rollback in endpoint
+from ...data.connection import get_db_session
+
+from ...auth.dependencies import get_current_user
 
 
 router = APIRouter(prefix="/videos", tags=["videos"])
-
-
-def get_video_service(session: AsyncSession = Depends(get_db_session)) -> VideoService:
-    """Dependency injection for VideoService"""
-    video_repository = VideoRepository(session)
-    file_storage_service = FileStorageService()
-    video_converter = VideoConverter()
-    return VideoService(video_repository, file_storage_service, video_converter)
 
 
 @router.post(
@@ -73,7 +67,7 @@ async def upload_video(
     background_tasks: BackgroundTasks,
     court_number: Annotated[int, Form(description="Court number for calibration")],
     current_user: Player = Depends(get_current_user),
-    video_service: VideoService = Depends(get_video_service),
+    video_service: IVideoService = Depends(get_video_service),
     session: AsyncSession = Depends(get_db_session)
 ) -> VideoUploadResponse:
     """
@@ -186,7 +180,7 @@ async def upload_video(
     description="Get information about allowed file formats and size limits"
 )
 async def get_upload_config(
-    video_service: VideoService = Depends(get_video_service)
+    video_service: IVideoService = Depends(get_video_service)
 ) -> dict:
     """Get upload configuration information"""
     return {
@@ -204,46 +198,21 @@ async def process_video_analysis(
     court_number: int,
     video_path: str
 ):
-    """Background task to run ML analysis"""
+    """
+    Background task to run ML analysis.
+    
+    Note: Background tasks manage their own database session lifecycle,
+    so we use the factory function from the DI container that accepts
+    a session directly.
+    """
+    # Import here to avoid circular imports in background task
     from app.data.connection import get_db_session
-    from app.data.repositories.analysis_repository import AnalysisRepository
-    from app.data.repositories.match_repository import (
-        MatchRepository, MatchPlayerRepository
-    )
-    from app.data.repositories.summary_metrics_repository import SummaryMetricsRepository
-    from app.data.repositories.hits_repository import HitsRepository
-    from app.data.repositories.rally_repository import RallyRepository
-    from app.data.repositories.heatmap_repository import HeatmapRepository
-    from app.data.repositories.video_repository import VideoRepository
-    from app.business.services.analysis_service import AnalysisService
-    from app.business.services.ml_service import MLService
-    from pathlib import Path
+    from app.dependencies import create_analysis_service
     
     async for session in get_db_session():
         try:
-            # Create repositories
-            analysis_repo = AnalysisRepository(session)
-            match_repo = MatchRepository(session)
-            match_player_repo = MatchPlayerRepository(session)
-            metrics_repo = SummaryMetricsRepository(session)
-            hits_repo = HitsRepository(session)
-            rally_repo = RallyRepository(session)
-            heatmap_repo = HeatmapRepository(session)
-            video_repo = VideoRepository(session)
-            
-            # Create services
-            ml_service = MLService()
-            analysis_service = AnalysisService(
-                analysis_repo,
-                match_repo,
-                match_player_repo,
-                metrics_repo,
-                hits_repo,
-                rally_repo,
-                heatmap_repo,
-                video_repo,
-                ml_service
-            )
+            # Use the DI container's factory function
+            analysis_service = create_analysis_service(session)
             
             # Step 1: Create analysis entity chain
             analysis = await analysis_service.create_analysis_for_video(

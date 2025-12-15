@@ -2,12 +2,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from datetime import datetime
+
 from .data.connection import create_tables
 from .config import get_settings
 from .presentation.controllers.player_controller import router as player_router
 from .presentation.controllers.auth_controller import router as auth_router
 from .presentation.controllers.video_controller import router as video_router
 from .presentation.controllers.match_controller import router as match_router
+from .presentation.controllers.heatmap_controller import router as heatmap_router
+from .presentation.controllers.rally_controller import router as rally_router
 from .business.exceptions import (
     AuthenticationException, 
     PlayerNotFoundException, 
@@ -19,43 +23,45 @@ from .business.exceptions import (
     MatchNotFoundException,
     PlayerInMatchNotFoundException,
     DataUnavailableException,
-    InvalidSetNumberException,
-    AnalysisNotCompleteException
+    AnalysisNotCompleteException,
+    HeatmapNotFoundException,
+    InsufficientPositionDataException,
+    RallyDataUnavailableException
 )
-from datetime import datetime
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup - create database tables
-    print("🚀 Starting up...")
+    """Application lifespan - startup and shutdown events"""
+    # Startup
+    print("Starting up...")
     try:
         await create_tables()
-        print("✅ Database tables created/verified")
+        print("Database tables created/verified")
         
         # Ensure upload directories exist
         import os
         os.makedirs(settings.video_upload_dir, exist_ok=True)
-        print(f"✅ Upload directory created/verified: {settings.video_upload_dir}")
+        print(f"Upload directory created/verified: {settings.video_upload_dir}")
         
-        # Test Firebase configuration (optional)
+        # Test Firebase configuration
         try:
             from app.auth.firebase_service import FirebaseService
-            FirebaseService()  # This will initialize Firebase and print status
+            FirebaseService()
         except Exception as e:
-            print(f"⚠️  Firebase initialization failed: {e}")
-            print("   Make sure Firebase environment variables are set correctly")
+            print(f"Firebase initialization failed: {e}")
+            print("Make sure Firebase environment variables are set correctly")
         
     except Exception as e:
-        print(f"❌ Startup failed: {e}")
+        print(f"Startup failed: {e}")
         raise
 
     yield
 
     # Shutdown
-    print("👋 Shutting down...")
+    print("Shutting down...")
 
 
 app = FastAPI(
@@ -64,7 +70,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware using config settings
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -74,7 +80,10 @@ app.add_middleware(
 )
 
 
-# Global exception handlers
+# ============================================================================
+# Global Exception Handlers
+# ============================================================================
+
 @app.exception_handler(AuthenticationException)
 async def auth_exception_handler(request: Request, exc: AuthenticationException):
     return JSONResponse(
@@ -162,9 +171,9 @@ async def player_in_match_not_found_handler(request: Request, exc: PlayerInMatch
 
 @app.exception_handler(DataUnavailableException)
 async def data_unavailable_handler(request: Request, exc: DataUnavailableException):
-    """UC-04 F1: Handle when hit data is not available"""
+    """UC-04 F1, UC-02 F1: Handle when analysis data is not available"""
     return JSONResponse(
-        status_code=503,  # Service Unavailable
+        status_code=503,
         content={
             "detail": str(exc),
             "type": "data_unavailable",
@@ -173,18 +182,10 @@ async def data_unavailable_handler(request: Request, exc: DataUnavailableExcepti
     )
 
 
-@app.exception_handler(InvalidSetNumberException)
-async def invalid_set_number_handler(request: Request, exc: InvalidSetNumberException):
-    return JSONResponse(
-        status_code=400,
-        content={"detail": str(exc), "type": "invalid_set_number"}
-    )
-
-
 @app.exception_handler(AnalysisNotCompleteException)
 async def analysis_not_complete_handler(request: Request, exc: AnalysisNotCompleteException):
     return JSONResponse(
-        status_code=409,  # Conflict
+        status_code=409,
         content={
             "detail": str(exc),
             "type": "analysis_not_complete",
@@ -193,12 +194,58 @@ async def analysis_not_complete_handler(request: Request, exc: AnalysisNotComple
     )
 
 
-# Include API routes
-app.include_router(auth_router, prefix="/api")      # Auth routes
-app.include_router(player_router, prefix="/api")    # Protected player routes
-app.include_router(video_router, prefix="/api")     # Video upload routes
-app.include_router(match_router, prefix="/api")     # Match routes
+@app.exception_handler(HeatmapNotFoundException)
+async def heatmap_not_found_handler(request: Request, exc: HeatmapNotFoundException):
+    """UC-02: Handle when heatmap data is not found"""
+    return JSONResponse(
+        status_code=404,
+        content={
+            "detail": str(exc),
+            "type": "heatmap_not_found"
+        }
+    )
 
+
+@app.exception_handler(InsufficientPositionDataException)
+async def insufficient_position_data_handler(request: Request, exc: InsufficientPositionDataException):
+    """UC-02 F2: Handle when AI couldn't track player sufficiently"""
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": str(exc),
+            "type": "insufficient_position_data",
+            "reason": "The AI could not track this player sufficiently to generate a heatmap"
+        }
+    )
+
+@app.exception_handler(RallyDataUnavailableException)
+async def rally_data_unavailable_handler(request: Request, exc: RallyDataUnavailableException):
+    """UC-08 F1: Handle when AI couldn't distinguish individual rallies"""
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": str(exc),
+            "type": "rally_data_unavailable",
+            "reason": "The AI could not distinguish individual rallies from each other"
+        }
+    )
+
+
+# ============================================================================
+# Include API Routers
+# ============================================================================
+
+app.include_router(auth_router, prefix="/api")
+app.include_router(player_router, prefix="/api")
+app.include_router(video_router, prefix="/api")
+app.include_router(match_router, prefix="/api")
+app.include_router(heatmap_router, prefix="/api")
+app.include_router(rally_router, prefix="/api")
+
+
+# ============================================================================
+# Root & Health Endpoints
+# ============================================================================
 
 @app.get("/")
 async def root():
@@ -212,7 +259,9 @@ async def root():
             "auth": "/api/auth",
             "players": "/api/players",
             "videos": "/api/videos",
-            "matches": "/api/matches"
+            "matches": "/api/matches",
+            "heatmaps": "/api/heatmaps",
+            "rallies": "/api/rallies"
         }
     }
 

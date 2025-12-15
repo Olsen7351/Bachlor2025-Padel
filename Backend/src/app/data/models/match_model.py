@@ -45,7 +45,7 @@ class HitsModel(Base):
     overhead_hits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     lob: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     serve: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    backhand: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    groundstrokes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # Changed from backhand
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 

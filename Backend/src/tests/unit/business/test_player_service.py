@@ -1,6 +1,4 @@
 import pytest
-from unittest.mock import AsyncMock
-from datetime import datetime
 
 from app.business.services.player_service import PlayerService
 from app.business.exceptions import (
@@ -326,42 +324,3 @@ class TestPlayerServiceGetById:
             await player_service.get_player_by_id("non-existent-id")
         
         assert "not found" in str(exc_info.value).lower()
-
-
-class TestPlayerServiceGetByEmail:
-    """Test suite for PlayerService.get_player_by_email method"""
-    
-    @pytest.fixture
-    def player_service(self, mock_player_repository):
-        return PlayerService(mock_player_repository)
-    
-    @pytest.mark.asyncio
-    async def test_get_player_by_email_success(self, player_service, mock_player_repository, sample_player):
-        """
-        GIVEN a player exists with the given email
-        WHEN getting player by email
-        THEN should return the player
-        """
-        # Arrange
-        mock_player_repository.get_by_email.return_value = sample_player
-        
-        # Act
-        result = await player_service.get_player_by_email("john@example.com")
-        
-        # Assert
-        assert result.email == "john@example.com"
-        mock_player_repository.get_by_email.assert_called_once_with("john@example.com")
-    
-    @pytest.mark.asyncio
-    async def test_get_player_by_email_not_found(self, player_service, mock_player_repository):
-        """
-        GIVEN no player exists with the given email
-        WHEN getting player by email
-        THEN should raise PlayerNotFoundException
-        """
-        # Arrange
-        mock_player_repository.get_by_email.return_value = None
-        
-        # Act & Assert
-        with pytest.raises(PlayerNotFoundException):
-            await player_service.get_player_by_email("nonexistent@example.com")

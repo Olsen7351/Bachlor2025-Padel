@@ -3,6 +3,8 @@ Shot Classification Model Architecture.
 
 Contains the EnhancedVideoClassifier model that combines video features (R(2+1)D-18) 
 with pose keypoints (Bi-LSTM) for shot type classification.
+
+Multi-task learning with shot type + side prediction.
 """
 
 import torch
@@ -20,7 +22,11 @@ class EnhancedVideoClassifier(nn.Module):
     Architecture:
     - Video branch: R(2+1)D-18 pretrained backbone
     - Pose branch: Bidirectional LSTM with attention
-    - Fusion: Concatenation + MLP classifier
+    - Fusion: Shared features + two heads (shot type & side)
+    
+    Heads:
+    1. shot_head: Classifies the shot type (num_classes)
+    2. side_head: Classifies player side (1 output, sigmoid)
     """
 
     def __init__(
@@ -28,7 +34,8 @@ class EnhancedVideoClassifier(nn.Module):
         num_classes: int, 
         pose_input_size: int = 51, 
         pose_hidden_size: int = 256, 
-        pretrained_video: bool = True
+        pretrained_video: bool = True,
+        freeze_backbone: bool = False
     ):
         super().__init__()
         
@@ -36,6 +43,11 @@ class EnhancedVideoClassifier(nn.Module):
         self.video_model = video_models.r2plus1d_18(
             weights=video_models.R2Plus1D_18_Weights.DEFAULT if pretrained_video else None
         )
+        
+        if freeze_backbone and pretrained_video:
+            for param in self.video_model.parameters():
+                param.requires_grad = False
+        
         num_video_ftrs = self.video_model.fc.in_features
         self.video_model.fc = nn.Identity()
 
@@ -56,9 +68,9 @@ class EnhancedVideoClassifier(nn.Module):
             nn.Softmax(dim=1)
         )
 
-        # Fusion classifier
+        # Shared fusion features
         fusion_size = num_video_ftrs + (pose_hidden_size * 2)
-        self.classifier = nn.Sequential(
+        self.shared_features = nn.Sequential(
             nn.Linear(fusion_size, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
@@ -66,11 +78,14 @@ class EnhancedVideoClassifier(nn.Module):
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(0.4),
-            nn.Linear(512, num_classes)
+            nn.Dropout(0.4)
         )
 
-    def forward(self, video_x: torch.Tensor, pose_x: torch.Tensor) -> torch.Tensor:
+        # Multi-task heads
+        self.shot_head = nn.Linear(512, num_classes)
+        self.side_head = nn.Linear(512, 1)
+
+    def forward(self, video_x: torch.Tensor, pose_x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass.
         
@@ -79,7 +94,9 @@ class EnhancedVideoClassifier(nn.Module):
             pose_x: Pose keypoints tensor of shape (B, T, 51)
             
         Returns:
-            Classification logits of shape (B, num_classes)
+            Tuple of (shot_logits, side_logits):
+                - shot_logits: Shape (B, num_classes)
+                - side_logits: Shape (B, 1)
         """
         # Video features
         video_features = self.video_model(video_x)
@@ -91,7 +108,10 @@ class EnhancedVideoClassifier(nn.Module):
         
         # Fusion
         combined = torch.cat((video_features, pose_features), dim=1)
-        return self.classifier(combined)
+        shared = self.shared_features(combined)
+        
+        # Multi-task outputs
+        return self.shot_head(shared), self.side_head(shared)
 
 
 def load_shot_model(
@@ -117,7 +137,7 @@ def load_shot_model(
     model = EnhancedVideoClassifier(
         num_classes=num_classes,
         pose_input_size=51,
-        pose_hidden_size=config.get('pose_hidden_size', 128)
+        pose_hidden_size=config.get('pose_hidden_size', 256)
     )
     model.load_state_dict(checkpoint['model_state_dict'])
     model.to(device)

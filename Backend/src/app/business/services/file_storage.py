@@ -1,4 +1,3 @@
-import os
 import aiofiles
 from pathlib import Path
 from typing import BinaryIO
@@ -11,7 +10,7 @@ from ...config import get_settings
 
 
 class FileStorageService(IFileStorageService):
-    """Service for handling file storage operations - follows Single Responsibility Principle"""
+    """Service for handling file storage operations"""
     
     def __init__(self, base_storage_path: str = None):
         """
