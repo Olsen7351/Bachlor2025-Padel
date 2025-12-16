@@ -48,6 +48,7 @@ const LoginPage = () => {
         try {
             const { idToken } = await firebaseLogin(email, password);
             await backendLogin(idToken);
+            localStorage.setItem("idToken", idToken);
             navigate("/upload");
         } catch (e: any) {
             setError("Forkert email eller adgangskode.");
@@ -58,8 +59,6 @@ const LoginPage = () => {
 
     return (
         <>
-            <title>Login</title>
-
             <div className="relative min-h-screen overflow-hidden">
                 <ParticleBackground />
 
