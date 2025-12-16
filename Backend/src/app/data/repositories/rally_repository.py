@@ -9,7 +9,18 @@ from .interfaces import IRallyRepository
 
 
 class RallyRepository(IRallyRepository):
-    """Repository for Rally entity"""
+    """
+    Repository for Rally entity
+    
+    Responsibilities:
+    - CRUD operations for Rally entity
+    - Rally-specific queries (by summary_metrics_id)
+    
+    Design Note:
+    - Rallies are match-level data stored via SummaryMetrics
+    - All players in a match share the same rally data
+    - Rally duration is the primary stored metric
+    """
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, RallyModel)
@@ -45,8 +56,8 @@ class RallyRepository(IRallyRepository):
         return self._to_domain(model)
     
     async def get_all(self) -> List[Rally]:
-        """Get all rally records"""
-        stmt = select(RallyModel)
+        """Get all rallies"""
+        stmt = select(RallyModel).order_by(RallyModel.id)
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_domain(model) for model in models]
@@ -67,7 +78,7 @@ class RallyRepository(IRallyRepository):
         return self._to_domain(model)
     
     async def update(self, entity: Rally) -> Rally:
-        """Update existing rally record"""
+        """Update existing rally"""
         stmt = select(RallyModel).where(RallyModel.id == entity.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -93,11 +104,20 @@ class RallyRepository(IRallyRepository):
             return True
         return False
     
+    # Rally-specific methods
+    
     async def get_by_summary_metrics_id(self, summary_metrics_id: int) -> List[Rally]:
-        """Get all rallies for a summary metrics record"""
-        stmt = select(RallyModel).where(
-            RallyModel.summary_metrics_id == summary_metrics_id
-        ).order_by(RallyModel.id)
+        """
+        Get all rallies for a summary metrics record.
+        
+        Note: Rallies are stored under SummaryMetrics but represent
+        match-level data. Both players in a match share the same rallies.
+        """
+        stmt = (
+            select(RallyModel)
+            .where(RallyModel.summary_metrics_id == summary_metrics_id)
+            .order_by(RallyModel.id)
+        )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_domain(model) for model in models]

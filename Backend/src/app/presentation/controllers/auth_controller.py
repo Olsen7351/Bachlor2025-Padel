@@ -1,44 +1,42 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 import requests
 
-from ...data.connection import get_db_session
-from ...data.repositories.interfaces import IPlayerRepository
-from ...data.repositories.player_repository import PlayerRepository
+# Business layer
 from ...business.services.interfaces import IPlayerService
-from ...business.services.player_service import PlayerService
-from ...business.exceptions import PlayerAlreadyExistsException, ValidationException, PlayerNotFoundException
-from ...auth.dependencies import get_current_user, get_firebase_user, AuthenticatedUser
+from ...business.exceptions import ValidationException, PlayerNotFoundException
+
+# DI container
+from ...dependencies import get_player_service
+
+from ...auth.dependencies import get_firebase_user, AuthenticatedUser
+
 from ..dtos.auth_dto import LoginResponse
 from ..dtos.player_dto import PlayerResponse
+
+# Config (for test endpoints)
+from ...config import get_settings
+
+# Firebase admin (for test endpoints only)
 from firebase_admin import auth as firebase_auth
-from app.config import get_settings
+
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-async def get_player_service(
-    session: AsyncSession = Depends(get_db_session)
-) -> IPlayerService:  # Return interface type
-    """
-    Dependency injection - returns IPlayerService interface
-    Controller depends on abstraction, not concrete class
-    """
-    player_repository: IPlayerRepository = PlayerRepository(session)
-    return PlayerService(player_repository)
-    
+
 @router.post("/login", response_model=LoginResponse)
 async def login(
     firebase_user: AuthenticatedUser = Depends(get_firebase_user),
     player_service: IPlayerService = Depends(get_player_service)
 ):
-    """Login endpoint - verifies Firebase token and creates user if needed
+    """
+    Login endpoint - verifies Firebase token and creates user if needed
     
     Flow:
     1. Frontend: User authenticates with Firebase (email + password)
     2. Frontend: Sets display_name in Firebase profile (updateProfile)
     3. Frontend: Gets Firebase ID token
     4. Frontend: Calls this endpoint with token
-    5. Backend: Verifies token (if invalid/expired → 401, never reaches here)
+    5. Backend: Verifies token (if invalid/expired -> 401, never reaches here)
     6. Backend: Gets or creates user in our database
     7. Backend: Returns user data
     """
@@ -47,7 +45,7 @@ async def login(
         player = await player_service.get_player_by_id(firebase_user.uid)
         
     except PlayerNotFoundException:
-        # User exists in Firebase but not in our database → create them
+        # User exists in Firebase but not in our database -> create them
         try:
             player = await player_service.create_player(
                 id=firebase_user.uid,
@@ -79,10 +77,11 @@ async def login(
             updated_at=player.updated_at
         )
     )
-    
+
+
 @router.get("/me", response_model=PlayerResponse)
 async def get_current_user_info(
-    firebase_user: AuthenticatedUser = Depends(get_firebase_user),  # ← CHANGED: Use get_firebase_user
+    firebase_user: AuthenticatedUser = Depends(get_firebase_user),
     player_service: IPlayerService = Depends(get_player_service)
 ):
     """
@@ -121,17 +120,23 @@ async def get_current_user_info(
             detail="Failed to retrieve user profile."
         )
 
-#region Helper endpoints (Firebase) for testing player registration
+
+# =============================================================================
+# Helper endpoints (Firebase) for testing player registration
+# =============================================================================
 
 @router.post("/test/create-user-and-token") 
 async def create_test_user_and_token(
     test_email: str = "test@example.com",
     test_password: str = "testpassword123",
-    test_name: str  = "Test User"
+    test_name: str = "Test User"
 ):
     """DEVELOPMENT ONLY: Create a Firebase user and return auth token"""
     if get_settings().environment != "development":
-        raise HTTPException(status_code=403, detail="Test endpoints only available in development")
+        raise HTTPException(
+            status_code=403, 
+            detail="Test endpoints only available in development"
+        )
     
     try:
         user_record = firebase_auth.create_user(
@@ -151,8 +156,15 @@ async def create_test_user_and_token(
         
     except Exception as e:
         if "already exists" in str(e):
-            raise HTTPException(status_code=400, detail=f"User {test_email} already exists. Try a different email or delete the user first.")
-        raise HTTPException(status_code=500, detail=f"Failed to create test user: {str(e)}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"User {test_email} already exists. Try a different email or delete the user first."
+            )
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to create test user: {str(e)}"
+        )
+
 
 @router.post("/test/login-existing-user")
 async def login_existing_user(
@@ -161,7 +173,10 @@ async def login_existing_user(
 ):
     """DEVELOPMENT ONLY: Login with existing Firebase user and get ID token"""
     if get_settings().environment != "development":
-        raise HTTPException(status_code=403, detail="Test endpoints only available in development")
+        raise HTTPException(
+            status_code=403, 
+            detail="Test endpoints only available in development"
+        )
     
     try:
         settings = get_settings()
@@ -185,7 +200,10 @@ async def login_existing_user(
         if login_response.status_code != 200:
             error_data = login_response.json()
             error_message = error_data.get('error', {}).get('message', 'Unknown error')
-            raise HTTPException(status_code=400, detail=f"Firebase login failed: {error_message}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Firebase login failed: {error_message}"
+            )
         
         login_data = login_response.json()
         firebase_uid = login_data['localId']
@@ -205,15 +223,20 @@ async def login_existing_user(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
-    
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Login failed: {str(e)}"
+        )
+
+
 @router.get("/test/list-firebase-users")
 async def list_firebase_users(max_results: int = 10):
-    """
-    DEVELOPMENT ONLY: List Firebase users for testing
-    """
+    """DEVELOPMENT ONLY: List Firebase users for testing"""
     if get_settings().environment != "development":
-        raise HTTPException(status_code=403, detail="Test endpoints only available in development")
+        raise HTTPException(
+            status_code=403, 
+            detail="Test endpoints only available in development"
+        )
     
     try:
         # List users from Firebase
@@ -238,18 +261,26 @@ async def list_firebase_users(max_results: int = 10):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list users: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to list users: {str(e)}"
+        )
+
 
 @router.delete("/test/delete-user/{uid}")
 async def delete_test_user(uid: str):
     """DEVELOPMENT ONLY: Delete a Firebase user"""
     if get_settings().environment != "development":
-        raise HTTPException(status_code=403, detail="Test endpoints only available in development")
+        raise HTTPException(
+            status_code=403, 
+            detail="Test endpoints only available in development"
+        )
     
     try:
         firebase_auth.delete_user(uid)
         return {"message": f"User {uid} deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
-    
-#endregion
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to delete user: {str(e)}"
+        )

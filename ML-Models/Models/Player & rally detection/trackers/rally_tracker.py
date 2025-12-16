@@ -277,7 +277,7 @@ class RallyTracker:
         
         # Abort if ball disappears too long during serve
         if self.frames_without_ball > gap_during // 2:
-            print(f"  [Frame {frame_idx}] ❌ Rally #{self.rally_counter} aborted (ball lost during serve)")
+            print(f"  [Frame {frame_idx}]  Rally #{self.rally_counter} aborted (ball lost during serve)")
             self._abort_rally()
             return
         
@@ -345,11 +345,11 @@ class RallyTracker:
             self.completed_rallies.append(self.current_rally)
             duration_sec = self.current_rally.duration_seconds(self.fps)
             shots = self.current_rally.shot_count_estimate
-            print(f"  [Frame {frame_idx}] ✅ Rally #{self.current_rally.rally_id} ENDED - "
+            print(f"  [Frame {frame_idx}]  Rally #{self.current_rally.rally_id} ENDED - "
                   f"Duration: {duration_sec:.1f}s, ~{shots} shots")
         else:
             reason = "too short" if not duration_ok else "not enough movement"
-            print(f"  [Frame {frame_idx}] ❌ Rally #{self.current_rally.rally_id} discarded ({reason})")
+            print(f"  [Frame {frame_idx}]  Rally #{self.current_rally.rally_id} discarded ({reason})")
         
         self.current_rally = None
         self._transition(RallyState.IDLE)

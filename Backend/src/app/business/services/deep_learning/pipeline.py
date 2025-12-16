@@ -391,21 +391,20 @@ def run_main_pipeline(config_or_args, output_video: Optional[str] = None) -> Dic
     Convenience function to run the full pipeline.
     
     Args:
-        config_or_args: Either a PipelineConfig or argparse-like namespace/SimpleNamespace
+        config_or_args: Either a PipelineConfig
         output_video: Optional output video path override
         
     Returns:
         Dict of output file paths
     """
-    from types import SimpleNamespace
     from .config import config_from_args, PipelineConfig as ConfigClass
     
-    # Handle both PipelineConfig and legacy argparse/SimpleNamespace
+    # Handle both PipelineConfig
     if isinstance(config_or_args, ConfigClass):
         config = config_or_args
         print(f"[Pipeline] Using PipelineConfig directly")
     else:
-        # It's an args-like object (SimpleNamespace or argparse.Namespace)
+        # It's an args-like object (argparse.Namespace)
         print(f"[Pipeline] Converting {type(config_or_args).__name__} to PipelineConfig...")
         config = config_from_args(config_or_args)
         print(f"[Pipeline] Conversion complete. Input path: {config.video.input_path}")

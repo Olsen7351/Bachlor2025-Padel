@@ -15,9 +15,6 @@ class AnalysisRepository(IAnalysisRepository):
     Responsibilities:
     - CRUD operations for Analysis entity
     - Analysis-specific queries
-    
-    Follows:
-    - Single Responsibility Principle: Only handles Analysis data access
     """
     
     def __init__(self, session: AsyncSession):
@@ -118,7 +115,6 @@ class AnalysisRepository(IAnalysisRepository):
         """
         Get analysis by video ID
         
-        Business Rule: Each video has one analysis (1:1 relationship)
         Used to find analysis from video context
         """
         stmt = select(AnalysisModel).where(AnalysisModel.video_id == video_id)
@@ -130,7 +126,6 @@ class AnalysisRepository(IAnalysisRepository):
         """
         Get analysis by match ID
         
-        Business Rule: Each match has one analysis (1:1 relationship)
         Used by MatchService to retrieve analysis_id for match overview
         """
         stmt = select(AnalysisModel).where(AnalysisModel.match_id == match_id)
@@ -138,17 +133,3 @@ class AnalysisRepository(IAnalysisRepository):
         model = result.scalar_one_or_none()
         return self._to_domain(model)
     
-    async def get_by_player_id(self, player_id: str) -> List[Analysis]:
-        """
-        Get all analyses for a player
-        
-        Used for player history and statistics
-        """
-        stmt = (
-            select(AnalysisModel)
-            .where(AnalysisModel.player_id == player_id)
-            .order_by(AnalysisModel.created_at.desc())
-        )
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-        return [self._to_domain(model) for model in models]

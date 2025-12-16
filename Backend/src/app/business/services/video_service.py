@@ -1,14 +1,3 @@
-"""
-Video Service - Handles video upload and processing business logic.
-
-Responsibilities:
-- Validate video files (format, size)
-- Convert videos to normalized format (1080p 30fps max)
-- Store videos via file storage service
-- Create video database records
-- Update video status
-"""
-
 from typing import BinaryIO, Optional
 from pathlib import Path
 from datetime import datetime
@@ -188,37 +177,6 @@ class VideoService(IVideoService):
     async def delete_video(self, video_id: int) -> bool:
         """Soft delete a video"""
         return await self._video_repository.soft_delete(video_id)
-    
-    async def get_video_by_id(self, video_id: int) -> Optional[Video]:
-        """Get video by ID"""
-        return await self._video_repository.get_by_id(video_id)
-    
-    async def update_video_status(
-        self, 
-        video_id: int, 
-        status: VideoStatus,
-        error_message: Optional[str] = None
-    ) -> Video:
-        """Update video processing status"""
-        video = await self._video_repository.get_by_id(video_id)
-        if not video:
-            raise VideoNotFoundException(f"Video with ID {video_id} not found")
-        
-        return await self._video_repository.update_status(
-            video_id, status, error_message
-        )
-    
-    def validate_video_file(self, filename: str, file_size: int) -> tuple[bool, Optional[str]]:
-        """Validate video file before upload"""
-        file_extension = Path(filename).suffix[1:].lower()
-        if file_extension not in self.ALLOWED_VIDEO_FORMATS:
-            return False, f"Format '{file_extension}' not supported. Allowed: {', '.join(self.ALLOWED_VIDEO_FORMATS)}"
-        
-        if file_size > self.MAX_FILE_SIZE_BYTES:
-            size_mb = file_size / (1024 * 1024)
-            return False, f"File size ({size_mb:.2f}MB) exceeds maximum ({self.MAX_FILE_SIZE_MB}MB)"
-        
-        return True, None
     
     def get_allowed_formats(self) -> list[str]:
         """Get list of allowed video formats"""

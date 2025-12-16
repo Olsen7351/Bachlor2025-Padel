@@ -1,29 +1,40 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
-from ...data.connection import get_db_session
-from ...data.repositories.player_repository import PlayerRepository
-from ...business.services.player_service import PlayerService
+from ...business.services.interfaces import IPlayerService
 from ...business.exceptions import PlayerNotFoundException
-from ...auth.dependencies import get_current_user
-from ...domain.player import Player
 from ..dtos.player_dto import PlayerResponse
+from ...domain.player import Player
+
+# DI container
+from ...dependencies import get_player_service
+from ...auth.dependencies import get_current_user
+
 
 router = APIRouter(prefix="/players", tags=["players"])
 
-async def get_player_service(session: AsyncSession = Depends(get_db_session)) -> PlayerService:
-    """Dependency injection for PlayerService"""
-    player_repository = PlayerRepository(session)
-    return PlayerService(player_repository)
 
 @router.get("/{player_id}", response_model=PlayerResponse)
 async def get_player(
     player_id: str,
-    current_user: Player = Depends(get_current_user),  # Returns Player, not AuthenticatedUser
-    player_service: PlayerService = Depends(get_player_service)
+    current_user: Player = Depends(get_current_user),
+    player_service: IPlayerService = Depends(get_player_service)
 ):
-    """Get player by ID (requires authentication)"""
+    """
+    Get player by ID (requires authentication)
+    
+    Args:
+        player_id: The player's unique identifier
+        current_user: Authenticated user (injected)
+        player_service: Player service (injected)
+        
+    Returns:
+        PlayerResponse with player details
+        
+    Raises:
+        404: Player not found
+        500: Internal server error
+    """
     try:
         player = await player_service.get_player_by_id(player_id)
         
@@ -37,16 +48,31 @@ async def get_player(
         )
     
     except PlayerNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=str(e)
+        )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get player: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to get player: {str(e)}"
+        )
+
 
 @router.get("/", response_model=List[PlayerResponse])
 async def list_players(
-    current_user: Player = Depends(get_current_user),  # Returns Player
-    player_service: PlayerService = Depends(get_player_service)
+    current_user: Player = Depends(get_current_user),
+    player_service: IPlayerService = Depends(get_player_service)
 ):
-    """Get all players (requires authentication)"""
+    """
+    Get all players (requires authentication)
+    
+    Returns:
+        List of PlayerResponse objects
+        
+    Raises:
+        500: Internal server error
+    """
     try:
         players = await player_service.get_all_players()
         
@@ -63,20 +89,28 @@ async def list_players(
         ]
     
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get players: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to get players: {str(e)}"
+        )
 
 
 @router.get("/me/profile", response_model=PlayerResponse)
 async def get_my_profile(
-    current_user: Player = Depends(get_current_user),  # Returns Player with .id
-    player_service: PlayerService = Depends(get_player_service)
+    current_user: Player = Depends(get_current_user)
 ):
-    """Get current user's profile"""
+    """
+    Get current user's profile
+    
+    Note: current_user is already a Player from the database,
+    so we don't need to call the service again.
+    
+    Returns:
+        PlayerResponse with current user's details
+    """
     try:
-        # current_user is already a Player from database
-        # Just return it directly, no need to look up again
         return PlayerResponse(
-            id=current_user.id,  # Use .id, not .uid
+            id=current_user.id,
             name=current_user.name,
             email=current_user.email,
             role=current_user.role,
@@ -85,4 +119,7 @@ async def get_my_profile(
         )
     
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to get profile: {str(e)}"
+        )
