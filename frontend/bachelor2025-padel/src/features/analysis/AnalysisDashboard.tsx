@@ -1,13 +1,13 @@
 import ParticleBackground from "../../globalComponents/ParticleBackground.tsx";
 import Animation from "../../globalComponents/Animation.tsx";
-import {useNavigate, useParams} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import duelsPicture from "../../assets/duels.jpg"
 import hitsPicture from "../../assets/hits.png"
 import heatmapPicture from "../../assets/heatmap.png"
 
 const AnalysisDashboard = () => {
     const navigate = useNavigate();
-    const {videoId} = useParams();
+
 
 
     return (
@@ -44,7 +44,9 @@ const AnalysisDashboard = () => {
                         </div>
                     </div>
 
-                     <div className="relative h-[calc(100vh-500px)] w-full rounded-xl overflow-hidden cursor-pointer group hover:scale-110 transition">
+                     <div
+                            onClick={()  => navigate("hits")}
+                         className="relative h-[calc(100vh-500px)] w-full rounded-xl overflow-hidden cursor-pointer group hover:scale-110 transition">
                             <img
                                 src={hitsPicture}
                                 alt="Hits Picture"
@@ -60,7 +62,9 @@ const AnalysisDashboard = () => {
                             </div>
                         </div>
 
-                        <div className="relative h-[calc(100vh-500px)] w-full rounded-xl overflow-hidden cursor-pointer group hover:scale-110 transition">
+                        <div
+                            onClick={()  => navigate("heatmap")}
+                            className="relative h-[calc(100vh-500px)] w-full rounded-xl overflow-hidden cursor-pointer group hover:scale-110 transition">
                             <img
                                 src={heatmapPicture}
                                 alt="Hits Picture"

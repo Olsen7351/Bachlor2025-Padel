@@ -30,8 +30,8 @@ const UploadPage = () => {
 
     async function waitForMatchOverview(matchId: number) {
         const start = Date.now();
-        const timeoutMs = 10 * 60_000; // 10 min
-        const intervalMs = 2000;
+        const timeoutMs = 30 * 60_000;
+        const intervalMs = 2 * 60_000;
 
         while (Date.now() - start < timeoutMs) {
             const res = await fetch(`${API_BASE}/matches/${matchId}/overview`, {
@@ -42,13 +42,11 @@ const UploadPage = () => {
 
             if (res.ok) return true;
 
-            // 404 => stadig i gang
             if (res.status === 404) {
                 await new Promise((r) => setTimeout(r, intervalMs));
                 continue;
             }
 
-            // andet end 404 => reel fejl
             const text = await res.text();
             throw new Error(text || `Fejl under analyse (${res.status})`);
         }
