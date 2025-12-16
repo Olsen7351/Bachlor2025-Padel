@@ -3,7 +3,6 @@ from typing import Dict
 from .interfaces import IMatchService
 from ..exceptions import (
     MatchNotFoundException,
-    PlayerInMatchNotFoundException,
     DataUnavailableException
 )
 from ...data.repositories.interfaces import (
@@ -118,44 +117,3 @@ class MatchService(IMatchService):
             "player_statistics": player_statistics,
             "created_at": match.created_at
         }
-    
-    async def get_player_hit_count(self, match_id: int, player_identifier: str) -> int:
-        """
-        Get hit count for a specific player in a match
-        
-        Business Rules:
-        1. Match must exist
-        2. Player must exist in the match
-        3. Hit data must be available
-        
-        Returns:
-            Total hit count for the player
-            
-        Raises:
-            MatchNotFoundException: If match doesn't exist
-            PlayerInMatchNotFoundException: If player not found in match
-            DataUnavailableException: If hit data is not available
-        """
-        # Verify match exists
-        match = await self._match_repo.get_by_id(match_id)
-        if not match:
-            raise MatchNotFoundException(f"Match with ID {match_id} not found")
-        
-        # Find player in match
-        match_player = await self._match_player_repo.get_by_identifier(match_id, player_identifier)
-        if not match_player:
-            raise PlayerInMatchNotFoundException(
-                f"Player '{player_identifier}' not found in match {match_id}"
-            )
-        
-        # Get metrics for this player
-        metrics = await self._metrics_repo.get_by_match_player_id(match_player.id)
-        
-        # UC-04 F1: Check if data is available
-        if not metrics:
-            raise DataUnavailableException(
-                f"Hit data is not available for player '{player_identifier}'. "
-                "The analysis may not have completed successfully."
-            )
-        
-        return metrics.total_hits

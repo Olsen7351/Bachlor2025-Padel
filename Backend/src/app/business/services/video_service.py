@@ -10,7 +10,6 @@ from ...data.repositories.interfaces import IVideoRepository
 from ...business.exceptions import (
     InvalidFileFormatException,
     FileTooLargeException,
-    VideoNotFoundException,
     StorageException
 )
 from ...config import get_settings

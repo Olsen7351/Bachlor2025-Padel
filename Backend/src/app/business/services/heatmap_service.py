@@ -1,6 +1,5 @@
 import base64
 from typing import Optional, List
-from dataclasses import dataclass
 
 from .interfaces import IHeatmapService
 from ..exceptions import (
@@ -17,35 +16,11 @@ from ...data.repositories.interfaces import (
     IHeatmapRepository
 )
 
-
-@dataclass
-class HeatmapData:
-    """Data transfer object for heatmap visualization"""
-    player_identifier: str
-    heatmap_base64: str
-    content_type: str = "image/png"
-
-
-@dataclass
-class PlayerHeatmapResponse:
-    """
-    Response model for single player heatmap.
-    Contains the 2D heatmap overlay data.
-    """
-    match_id: int
-    player_identifier: str
-    heatmap_2d: Optional[str]  # Base64 encoded PNG
-    content_type: str = "image/png"
-
-
-@dataclass
-class HeatmapComparisonResponse:
-    """
-    Response model for comparing multiple player heatmaps.
-    UC-02 S2: Comparison of heatmaps
-    """
-    match_id: int
-    heatmaps: List[HeatmapData]
+from .results.heatmap_results import (
+    PlayerHeatmapResult,
+    HeatmapDataResult,
+    HeatmapComparisonResult
+)
 
 
 class HeatmapService(IHeatmapService):
@@ -56,11 +31,6 @@ class HeatmapService(IHeatmapService):
     - Retrieve and encode heatmaps for API responses
     - Handle heatmap comparison logic
     - Validate heatmap availability
-    
-    Follows:
-    - Interface Segregation Principle: Implements IHeatmapService
-    - Single Responsibility Principle: Only handles heatmap logic
-    - Dependency Inversion Principle: Depends on repository interfaces
     """
     
     def __init__(
@@ -79,7 +49,7 @@ class HeatmapService(IHeatmapService):
         self, 
         match_id: int, 
         player_identifier: str
-    ) -> PlayerHeatmapResponse:
+    ) -> PlayerHeatmapResult:
         """
         UC-02 S1: Get heatmap for a specific player in a match.
         
@@ -143,7 +113,7 @@ class HeatmapService(IHeatmapService):
         # Step 6: Encode as base64
         heatmap_base64 = base64.b64encode(heatmap.heatmap).decode('utf-8')
         
-        return PlayerHeatmapResponse(
+        return PlayerHeatmapResult(
             match_id=match_id,
             player_identifier=player_identifier,
             heatmap_2d=heatmap_base64,
@@ -192,7 +162,7 @@ class HeatmapService(IHeatmapService):
         self, 
         match_id: int,
         player_identifiers: Optional[List[str]] = None
-    ) -> HeatmapComparisonResponse:
+    ) -> HeatmapComparisonResult:
         """
         UC-02 S2: Get multiple heatmaps for comparison.
         
@@ -218,7 +188,7 @@ class HeatmapService(IHeatmapService):
                 if mp.player_identifier in player_identifiers
             ]
         
-        heatmaps: List[HeatmapData] = []
+        heatmaps: List[HeatmapDataResult] = []
         
         for match_player in match_players:
             try:
@@ -231,7 +201,7 @@ class HeatmapService(IHeatmapService):
                     continue
                 
                 heatmap_base64 = base64.b64encode(heatmap.heatmap).decode('utf-8')
-                heatmaps.append(HeatmapData(
+                heatmaps.append(HeatmapDataResult(
                     player_identifier=match_player.player_identifier,
                     heatmap_base64=heatmap_base64
                 ))
@@ -244,7 +214,7 @@ class HeatmapService(IHeatmapService):
                 "No heatmap data available for any players in this match"
             )
         
-        return HeatmapComparisonResponse(
+        return HeatmapComparisonResult(
             match_id=match_id,
             heatmaps=heatmaps
         )

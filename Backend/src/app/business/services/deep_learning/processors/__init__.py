@@ -5,5 +5,4 @@ __all__ = [
     'ShotClassificationProcessor',
     'SHOT_COLORS',
     'export_player_positions_csv'
-    # 'export_analysis_summary'
 ]

@@ -174,24 +174,6 @@ async def upload_video(
         )
 
 
-@router.get(
-    "/config/upload-info",
-    summary="Get upload configuration",
-    description="Get information about allowed file formats and size limits"
-)
-async def get_upload_config(
-    video_service: IVideoService = Depends(get_video_service)
-) -> dict:
-    """Get upload configuration information"""
-    return {
-        "max_file_size_mb": video_service.get_max_file_size_mb(),
-        "allowed_formats": video_service.get_allowed_formats(),
-        "max_resolution": "1920x1080",
-        "max_fps": 30,
-        "description": "Videos larger than 1080p or with FPS > 30 will be automatically converted"
-    }
-
-
 async def process_video_analysis(
     video_id: int, 
     player_id: str, 

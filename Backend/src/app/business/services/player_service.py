@@ -1,4 +1,3 @@
-from typing import List
 from .interfaces import IPlayerService
 from ..exceptions import PlayerAlreadyExistsException, PlayerNotFoundException, ValidationException
 from ...data.repositories.interfaces import IPlayerRepository
@@ -61,8 +60,4 @@ class PlayerService(IPlayerService):
         if not player:
             raise PlayerNotFoundException(f"Player with ID {player_id} not found")
         return player
-    
-    async def get_all_players(self) -> List[Player]:
-        """Get all players"""
-        return await self._player_repository.get_all()
     

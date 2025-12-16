@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime
 from pathlib import Path
 
-from .interfaces import IAnalysisService
+from .interfaces import IAnalysisService, IMLService
 from ...domain.analysis import Analysis
 from ...domain.match import Match, MatchPlayer, SummaryMetrics, Hits, Rally, Heatmap
 from ...domain.video import VideoStatus
@@ -20,8 +20,7 @@ from ...data.repositories.interfaces import (
     IHeatmapRepository,
     IVideoRepository
 )
-from .ml_service import MLService, MLAnalysisResult, TRACKED_PLAYERS
-
+from .deep_learning.results import MLAnalysisResult, TRACKED_PLAYERS
 
 class AnalysisService(IAnalysisService):
     """
@@ -46,7 +45,7 @@ class AnalysisService(IAnalysisService):
         rally_repository: IRallyRepository,
         heatmap_repository: IHeatmapRepository,
         video_repository: IVideoRepository,
-        ml_service: Optional[MLService] = None
+        ml_service: IMLService
     ):
         """Initialize with all required repositories and services"""
         self._analysis_repo = analysis_repository
@@ -57,7 +56,7 @@ class AnalysisService(IAnalysisService):
         self._rally_repo = rally_repository
         self._heatmap_repo = heatmap_repository
         self._video_repo = video_repository
-        self._ml_service = ml_service or MLService()
+        self._ml_service = ml_service
     
     async def create_analysis_for_video(
         self, 

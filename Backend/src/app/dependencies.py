@@ -44,8 +44,7 @@ from .business.services.interfaces import (
     IRallyService,
     IHeatmapService,
     IAnalysisService,
-    IFileStorageService
-)
+    IFileStorageService)
 
 
 # =============================================================================

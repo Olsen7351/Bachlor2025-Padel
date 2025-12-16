@@ -3,15 +3,26 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from .firebase_service import FirebaseService
 from ..business.exceptions import AuthenticationException, PlayerNotFoundException
 from ..data.connection import get_db_session
+from ..business.services.interfaces import IAuthService
+from .firebase_service import FirebaseService
+from ..data.repositories.interfaces import IPlayerRepository
 from ..data.repositories.player_repository import PlayerRepository
 from ..domain.player import Player
 
 
 security = HTTPBearer()
-firebase_service = FirebaseService()
+
+def get_auth_service() -> IAuthService:
+    """Dependency to get the AuthService instance"""
+    return FirebaseService()
+
+def get_player_repository(
+    session: AsyncSession = Depends(get_db_session)
+) -> IPlayerRepository:
+    """Dependency to get PlayerRepository instance"""
+    return PlayerRepository(session)
 
 
 class AuthenticatedUser:
@@ -25,22 +36,23 @@ class AuthenticatedUser:
         self.name = firebase_data.get('name', '')
 
 
-async def verify_firebase_token(credentials: HTTPAuthorizationCredentials) -> AuthenticatedUser:
+async def _verify_token_internal(
+        credentials: HTTPAuthorizationCredentials,
+        auth_service: IAuthService
+        ) -> AuthenticatedUser:
     """
     Internal helper to verify Firebase token and return AuthenticatedUser
     """
     try:
         # Verify the Firebase ID token
-        decoded_token = await firebase_service.verify_token(credentials.credentials)
-        
+        decoded_token = await auth_service.verify_token(credentials.credentials)
+
         # Create authenticated user object
-        user = AuthenticatedUser(
+        return AuthenticatedUser(
             uid=decoded_token['uid'],
             email=decoded_token.get('email', ''),
             firebase_data=decoded_token
         )
-        
-        return user
         
     except AuthenticationException as e:
         raise HTTPException(
@@ -58,7 +70,8 @@ async def verify_firebase_token(credentials: HTTPAuthorizationCredentials) -> Au
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    session: AsyncSession = Depends(get_db_session)
+    auth_service: IAuthService = Depends(get_auth_service),
+    player_repository: IPlayerRepository = Depends(get_player_repository)
 ) -> Player:
     """
     FastAPI dependency to get current authenticated user as a Player object
@@ -75,11 +88,9 @@ async def get_current_user(
             # current_user has all Player fields (name, email, role, etc.)
     """
     # Step 1 & 2: Verify Firebase token and get user info
-    firebase_user = await verify_firebase_token(credentials)
+    firebase_user = await _verify_token_internal(credentials, auth_service)
     
-    # Step 3: Look up Player in database using firebase_uid
-    player_repository = PlayerRepository(session)
-    
+    # Step 3: Look up Player in database using firebase_uid    
     try:
         player = await player_repository.get_by_id(firebase_user.uid)
         
@@ -108,7 +119,8 @@ async def get_current_user(
 
 async def get_optional_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
-    session: AsyncSession = Depends(get_db_session)
+    auth_service: IAuthService = Depends(get_auth_service),
+    player_repository: IPlayerRepository = Depends(get_player_repository)
 ) -> Optional[Player]:
     """
     Optional authentication - returns None if no token provided
@@ -124,13 +136,18 @@ async def get_optional_user(
         return None
     
     try:
-        return await get_current_user(credentials, session)
+        firebase_user = await _verify_token_internal(credentials, auth_service)
+        player = await player_repository.get_by_id(firebase_user.uid)
+        return player
     except HTTPException:
+        return None
+    except Exception:
         return None
 
 
 async def get_firebase_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    auth_service: IAuthService = Depends(get_auth_service)
 ) -> AuthenticatedUser:
     """
     Get Firebase user info without database lookup
@@ -140,7 +157,7 @@ async def get_firebase_user(
         def endpoint(firebase_user: AuthenticatedUser = Depends(get_firebase_user)):
             # firebase_user.uid, firebase_user.email, etc.
     """
-    return await verify_firebase_token(credentials)
+    return await _verify_token_internal(credentials, auth_service)
 
 
 def require_role(required_role: str):

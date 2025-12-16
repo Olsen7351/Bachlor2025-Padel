@@ -29,7 +29,6 @@ class PlayerHeatmapDto(BaseModel):
     match_id: int = Field(..., description="Match ID")
     player_identifier: str = Field(..., description="Player identifier")
     heatmap_2d: Optional[str] = Field(None, description="Base64 encoded 2D heatmap PNG")
-    # heatmap_3d: Optional[str] = Field(None, description="Base64 encoded 3D visualization - TODO")
     content_type: str = Field(default="image/png", description="MIME type")
     
     model_config = ConfigDict(
