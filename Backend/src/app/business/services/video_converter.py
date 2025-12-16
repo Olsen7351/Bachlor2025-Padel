@@ -1,5 +1,3 @@
-"""Video conversion utility - ensures videos are 1080p 30fps or lower"""
-
 import ffmpeg
 from pathlib import Path
 from typing import Tuple, Optional

@@ -1,13 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
-
-class PlayerCreateRequest(BaseModel):
-    """DTO for creating a player"""
-    id: Optional[str] = None  # Firebase ID can be provided
-    name: str = Field(..., min_length=1, max_length=100)
-    email: EmailStr
-    role: Optional[str] = "player"
 
 class PlayerResponse(BaseModel):
     """DTO for player response"""

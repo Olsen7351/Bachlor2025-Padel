@@ -1,5 +1,3 @@
-"""SummaryMetrics repository implementation"""
-
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
@@ -128,7 +126,4 @@ class SummaryMetricsRepository(ISummaryMetricsRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_domain(model) for model in models]
-    
-    async def get_by_match_and_set(self, match_id: int, set_number: int) -> List[SummaryMetrics]:
-        """Get metrics filtered by set (placeholder - returns all for now)"""
-        return await self.get_all_by_match_id(match_id)
+

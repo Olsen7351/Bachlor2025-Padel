@@ -1,15 +1,11 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from datetime import datetime
 
 from ...domain.match import Match, MatchPlayer
 from ..models.match_model import MatchModel, MatchPlayerModel
 from .interfaces import IMatchRepository, IMatchPlayerRepository
-
-# Import AnalysisModel for the join query
-from ..models.analysis_model import AnalysisModel
 
 
 class MatchRepository(IMatchRepository):
@@ -19,10 +15,6 @@ class MatchRepository(IMatchRepository):
     Responsibilities:
     - CRUD operations for Match entity
     - Match-specific queries
-    
-    Follows:
-    - Single Responsibility Principle: Only handles Match data access
-    - Dependency Inversion Principle: Implements IMatchRepository interface
     """
     
     def __init__(self, session: AsyncSession):
@@ -99,39 +91,6 @@ class MatchRepository(IMatchRepository):
             await self.session.flush()
             return True
         return False
-    
-    # Match-specific methods
-    
-    async def get_by_analysis_id(self, analysis_id: int) -> Optional[Match]:
-        """
-        Get match by analysis ID
-        
-        Business Rule: Analysis has 1:1 relationship with Match
-        Used to find match from analysis context
-        """
-        stmt = select(MatchModel).join(AnalysisModel).where(
-            AnalysisModel.id == analysis_id,
-            AnalysisModel.match_id == MatchModel.id
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        return self._to_domain(model)
-    
-    async def get_match_with_players(self, match_id: int) -> Optional[Match]:
-        """
-        Get match with all associated players using eager loading
-        
-        Performance optimization: Uses selectinload to avoid N+1 queries
-        """
-        stmt = (
-            select(MatchModel)
-            .options(selectinload(MatchModel.match_players))
-            .where(MatchModel.id == match_id)
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        return self._to_domain(model)
-
 
 class MatchPlayerRepository(IMatchPlayerRepository):
     """
@@ -140,10 +99,6 @@ class MatchPlayerRepository(IMatchPlayerRepository):
     Responsibilities:
     - CRUD operations for MatchPlayer entity
     - Player-match relationship queries
-    
-    Follows:
-    - Single Responsibility Principle: Only handles MatchPlayer data access
-    - Dependency Inversion Principle: Implements IMatchPlayerRepository interface
     """
     
     def __init__(self, session: AsyncSession):

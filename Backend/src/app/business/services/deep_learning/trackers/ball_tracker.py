@@ -146,12 +146,8 @@ class SpatialPlayerFilter:
     Ball should be within reasonable distance of players on/near the court.
     """
     
-    def __init__(self, max_distance_any_player: float = 500,
-                 max_distance_court_player: float = 400,
-                 prefer_court_players: bool = True):
+    def __init__(self, max_distance_any_player: float = 500,):
         self.max_distance_any_player = max_distance_any_player
-        self.max_distance_court_player = max_distance_court_player
-        self.prefer_court_players = prefer_court_players
     
     def filter_detection(self, ball_bbox: List[float], player_detections: Dict) -> Tuple[bool, str]:
         """Returns (should_accept, reason)"""
@@ -345,10 +341,6 @@ class SmartBallTracker:
                 self.last_pos = detected_pos
                 self.missing_frames = 0
                 return detected_pos
-            
-            dist = np.linalg.norm(np.array(detected_pos) - np.array(self.last_pos))
-            allowed_dist = self.max_jump_dist * (self.missing_frames + 1)
-            # Note: original code didn't use allowed_dist check, keeping behavior
         
         self.last_pos = detected_pos
         self.missing_frames = 0

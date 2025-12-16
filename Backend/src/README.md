@@ -171,94 +171,134 @@ git diff HEAD~1 uv.lock  # See what packages were added/updated
 ```
 Backend/src/
 ├── app/
-│   ├── auth/                      # 🔐 Authentication Layer (Firebase)
+│   ├── auth/                           # Authentication Layer
 │   │   ├── __init__.py
-│   │   ├── firebase_service.py    # Firebase Admin SDK integration
-│   │   └── dependencies.py        # Auth dependencies (get_current_user, etc.)
+│   │   ├── firebase_service.py         # Firebase Admin SDK integration
+│   │   └── dependencies.py             # Auth dependencies (get_current_user)
 │   │
-│   ├── domain/                    # 🏛️ Domain Models (Business Entities)
+│   ├── domain/                         # Domain Models (Business Entities)
 │   │   ├── __init__.py
-│   │   ├── player.py              # Player domain entity (@dataclass)
-│   │   ├── video.py               # Video domain entity
-│   │   ├── match.py               # Match and related entities
-│   │   └── analysis.py            # Analysis domain entity
+│   │   ├── player.py                   # Player domain entity (@dataclass)
+│   │   ├── video.py                    # Video domain entity
+│   │   ├── match.py                    # Match domain entity
+│   │   └── analysis.py                 # Analysis domain entity
 │   │
-│   ├── data/                      # 💾 Data Access Layer
-│   │   ├── models/                # SQLAlchemy ORM Models
-│   │   │   ├── __init__.py        # Imports all models for relationship resolution
-│   │   │   ├── base.py            # Base SQLAlchemy declarative class
-│   │   │   ├── player_model.py    # Player database model
-│   │   │   ├── video_model.py     # Video database model
-│   │   │   ├── match_model.py     # Match and related database models
-│   │   │   └── analysis_model.py  # Analysis database model
-│   │   ├── repositories/          # Repository Pattern Implementation
+│   ├── data/                           # Data Access Layer
+│   │   ├── models/                     # SQLAlchemy ORM Models
+│   │   │   ├── __init__.py             # Imports all models for relationship resolution
+│   │   │   ├── base.py                 # Base SQLAlchemy declarative class
+│   │   │   ├── player_model.py
+│   │   │   ├── video_model.py
+│   │   │   ├── match_model.py
+│   │   │   └── analysis_model.py
+│   │   ├── repositories/               # Repository Pattern Implementation
 │   │   │   ├── __init__.py
-│   │   │   ├── interfaces.py      # Repository interfaces (IPlayerRepository, etc.)
-│   │   │   ├── base_repository.py # Generic base repository with CRUD
+│   │   │   ├── interfaces.py           # Repository interfaces (ABC)
+│   │   │   ├── base_repository.py      # Generic CRUD base
 │   │   │   ├── player_repository.py
 │   │   │   ├── video_repository.py
 │   │   │   ├── match_repository.py
+│   │   │   ├── heatmap_repository.py
+│   │   │   ├── rally_repository.py
+│   │   │   ├── hits_repository.py
+│   │   │   ├── summary_metrics_repository.py
 │   │   │   └── analysis_repository.py
-│   │   └── connection.py          # Database session management
+│   │   └── connection.py               # Database session management
 │   │
-│   ├── business/                  # ⚙️ Business Logic Layer
-│   │   ├── services/              # Business logic implementation
+│   ├── business/                       # Business Logic Layer
+│   │   ├── services/
 │   │   │   ├── __init__.py
-│   │   │   ├── interfaces.py      # Service interfaces (IPlayerService, etc.)
-│   │   │   ├── player_service.py  # Player business logic
-│   │   │   ├── video_service.py   # Video processing logic
-│   │   │   ├── match_service.py   # Match management logic
-│   │   │   └── analysis_service.py # Analysis business logic
-│   │   └── exceptions.py          # Business-specific exceptions
+│   │   │   ├── interfaces.py           # Service interfaces (ABC)
+│   │   │   ├── player_service.py
+│   │   │   ├── video_service.py
+│   │   │   ├── match_service.py
+│   │   │   ├── heatmap_service.py
+│   │   │   ├── rally_service.py
+│   │   │   ├── analysis_service.py
+│   │   │   ├── ml_service.py           # ML orchestration
+│   │   │   ├── file_storage.py         # File system operations
+│   │   │   ├── video_converter.py      # Video processing utilities
+│   │   │   │
+│   │   │   └── deep_learning/             # ML Components
+│   │   │      ├── architectures/          # Neural network definitions
+│   │   │      │   └── shot_classifier.py
+│   │   │      ├── court_info/             # Court calibration data
+│   │   │      │   └── court_information.json
+│   │   │      ├── models/                 # Trained model weights
+│   │   │      │   ├── TrackNet_best.pt
+│   │   │      │   ├── yolov8n-pose.pt
+│   │   │      │   └── yolov8s.pt
+│   │   │      ├── processors/             # Video processing
+│   │   │      │   ├── export.py
+│   │   │      │   └── shot_processor.py
+│   │   │      ├── trackers/               # Object tracking
+│   │   │      │   ├── ball_tracker.py
+│   │   │      │   ├── player_tracker.py
+│   │   │      │   ├── rally_tracker.py
+│   │   │      │   └── simple_tracker.py
+│   │   │      ├── utils/                  # ML utilities
+│   │   │      │   ├── calibration_utils.py
+│   │   │      │   ├── heatmap_utils.py
+│   │   │      │   ├── inference_utils.py
+│   │   │      │   └── video_utils.py
+│   │   │      ├── results/                # Results processing
+│   │   │      │   └── heatmap_results.py
+│   │   │      ├── config.py               # ML configuration
+│   │   │      ├── inference.py            # Inference engine
+│   │   │      └── pipeline.py             # ML pipeline orchestration
+│   │   │
+│   │   └── exceptions.py               # Business-specific exceptions
 │   │
-│   ├── presentation/              # 🌐 Presentation Layer (API)
-│   │   ├── dtos/                  # Data Transfer Objects (Pydantic)
+│   ├── presentation/                   # Presentation Layer (API)
+│   │   ├── dtos/                       # Data Transfer Objects (Pydantic)
 │   │   │   ├── __init__.py
-│   │   │   ├── auth_dto.py        # Auth API contracts (Register, Login, etc.)
-│   │   │   ├── player_dto.py      # Player API contracts
-│   │   │   ├── video_dto.py       # Video API contracts
-│   │   │   ├── match_dto.py       # Match API contracts
-│   │   │   └── analysis_dto.py    # Analysis API contracts
-│   │   └── controllers/           # FastAPI Controllers
+│   │   │   ├── auth_dto.py
+│   │   │   ├── player_dto.py
+│   │   │   ├── video_dto.py
+│   │   │   ├── match_dto.py
+│   │   │   ├── heatmap_dto.py
+│   │   │   └── rally_dto.py
+│   │   └── controllers/                # FastAPI Routers
 │   │       ├── __init__.py
-│   │       ├── auth_controller.py      # Auth endpoints (register, login, /me)
-│   │       ├── player_controller.py    # Player endpoints
-│   │       ├── video_controller.py     # Video endpoints
-│   │       ├── match_controller.py     # Match endpoints
-│   │       └── analysis_controller.py  # Analysis endpoints
+│   │       ├── auth_controller.py
+│   │       ├── player_controller.py
+│   │       ├── video_controller.py
+│   │       ├── match_controller.py
+│   │       ├── heatmap_controller.py
+│   │       └── rally_controller.py
 │   │
-│   ├── main.py                    # FastAPI app initialization
-│   └── config.py                  # Application configuration (Pydantic Settings)
+│   ├── main.py                         # FastAPI app initialization
+│   ├── config.py                       # Application configuration
+│   └── dependencies.py                 # Global dependency factories
 │
-├── tests/                         # 🧪 Test Suite
-│   ├── __init__.py
-│   ├── conftest.py                # Shared pytest fixtures
-│   ├── unit/                      # Unit tests (mocked dependencies)
-│   │   ├── __init__.py
-│   │   ├── business/              # Service layer tests
-│   │   │   ├── __init__.py
-│   │   │   ├── test_player_service.py  # UC-09 tests
-│   │   │   ├── test_match_service.py   # UC-04 tests
-│   │   │   └── test_video_service.py   # Video service tests
-│   │   ├── data/                  # Repository tests (future)
+├── tests/                              # Test Suite
+│   ├── conftest.py                     # Shared pytest fixtures
+│   ├── unit/
+│   │   ├── business/                   # Service layer tests
+│   │   │   ├── test_match_service.py
+│   │   │   ├── test_player_service.py
+│   │   │   └── test_video_service.py
+│   │   ├── data/                       # Repository tests
 │   │   │   └── __init__.py
-│   │   └── presentation/          # Controller tests
-│   │       ├── __init__.py
-│   │       ├── test_auth_controller.py    # UC-00, UC-09 controller tests
-│   │       ├── test_match_controller.py   # Match controller tests
-│   │       └── test_video_controller.py   # Video controller tests
-│   └── integration/               # Integration tests (future)
+│   │   └── presentation/               # Controller tests
+│   │       ├── test_auth_controller.py
+│   │       ├── test_match_controller.py
+│   │       └── test_video_controller.py
+│   └── integration/                    # Integration tests
 │       └── __init__.py
 │
 ├── scripts/
-│   └── dev-setup.py               # Development environment setup
+│   └── dev-setup.py                    # Development setup script
 │
-├── main.py                        # Application entry point
-├── pytest.ini                     # Pytest configuration
-├── pyproject.toml                 # Project dependencies and configuration
-├── .env                          # Environment variables (not tracked)
-├── .gitignore                     # Git ignore rules
-└── uv.lock                       # Exact dependency versions (tracked)
+├── uploads/                            # Video upload directory
+│   └── videos/
+│
+├── main.py                             # Application entry point
+├── pytest.ini                          # Pytest configuration
+├── pyproject.toml                      # Project dependencies
+├── .env                                # Environment variables (not tracked)
+├── .env.example                        # Environment template
+└── uv.lock                             # Dependency lock file
 ```
 
 ---

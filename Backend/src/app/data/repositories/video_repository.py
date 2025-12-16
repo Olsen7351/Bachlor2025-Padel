@@ -148,20 +148,6 @@ class VideoRepository(IVideoRepository):
         
         return self._to_domain(updated_model)
     
-    async def get_by_status(self, status: VideoStatus) -> List[Video]:
-        """Get all videos with specific status - video-specific query"""
-        stmt = (
-            select(VideoModel)
-            .where(
-                VideoModel.status == status.value,
-                VideoModel.is_deleted == False
-            )
-            .order_by(VideoModel.upload_timestamp.desc())
-        )
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-        return [self._to_domain(model) for model in models]
-    
     async def soft_delete(self, video_id: int) -> bool:
         """Soft delete video (set is_deleted=True) - video-specific operation"""
         stmt = (

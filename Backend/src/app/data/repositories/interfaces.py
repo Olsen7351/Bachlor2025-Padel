@@ -43,11 +43,6 @@ class IVideoRepository(BaseRepository[Video, VideoModel]):
         pass
 
     @abstractmethod
-    async def get_by_status(self, status: VideoStatus) -> List[Video]:
-        """Get all videos with specific status - video-specific query"""
-        pass
-
-    @abstractmethod
     async def soft_delete(self, video_id: int) -> bool:
         """Soft delete video (set is_deleted=True) - video-specific operation"""
         pass
@@ -62,21 +57,13 @@ class IAnalysisRepository(BaseRepository[Analysis, AnalysisModel]):
         pass
 
     @abstractmethod
-    async def get_by_player_id(self, player_id: str) -> List[Analysis]:
-        """Get all analyses for a player - analysis-specific query"""
+    async def get_by_match_id(self, match_id: int) -> Optional[Analysis]:
+        """Get analysis by match ID - analysis-specific query"""
         pass
 
 class IMatchRepository(BaseRepository[Match, MatchModel]):
     """Match-specific repository interface"""
-    @abstractmethod
-    async def get_by_analysis_id(self, anaysis_id: int) -> Optional[Match]:
-        """Get match by analysis ID - match-specific query"""
-        pass
-
-    @abstractmethod
-    async def get_match_with_players(self, match_id: int) -> Optional[Match]:
-        """Get match with all associated players - eager loading"""
-        pass
+    pass
 
 class IMatchPlayerRepository(BaseRepository[MatchPlayer, MatchPlayerModel]):
     """MatchPlayer-specific repository interface"""
@@ -102,10 +89,6 @@ class ISummaryMetricsRepository(BaseRepository[SummaryMetrics, SummaryMetricsMod
         """Get summary metrics for all players in a match - UC-04 S1"""
         pass
 
-    @abstractmethod
-    async def get_by_match_and_set(self, match_id: int, set_number: int) -> List[SummaryMetrics]:
-        """Get summary metrics filtered by set number - UC-04 S2"""
-        pass
     
 class IHitsRepository(BaseRepository[Hits, HitsModel], ABC):
     """Hits repository interface - standalone entity"""
@@ -113,7 +96,9 @@ class IHitsRepository(BaseRepository[Hits, HitsModel], ABC):
 
 
 class IRallyRepository(BaseRepository[Rally, RallyModel], ABC):
-    """Rally repository interface"""
+    """
+    Rally repository interface - standalone entity
+    """
     
     @abstractmethod
     async def get_by_summary_metrics_id(self, summary_metrics_id: int) -> List[Rally]:

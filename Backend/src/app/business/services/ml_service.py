@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')  # Set BEFORE importing pyplot - required for background threads on macOS
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
+
 import csv
 
 from .deep_learning.config import PipelineConfig
@@ -11,25 +12,29 @@ from .deep_learning.pipeline import run_main_pipeline
 from .deep_learning.utils import generate_heatmap
 
 
+# Constants for tracked players (only near-side players)
+TRACKED_PLAYERS = ["player_1", "player_2"]
+
+
 @dataclass
 class PlayerStats:
     """
     Stats for a single player from ML analysis.
-    Maps to domain Hits entity for player_1/player_2.
+    Only populated for player_1 and player_2 (near-side players).
     """
-    player_identifier: str  # "player_1", "player_2", etc.
+    player_identifier: str  # "player_1" or "player_2"
     total_hits: int = 0
     overhead_hits: int = 0
     lob: int = 0
     serve: int = 0
-    backhand: int = 0
+    groundstrokes: int = 0
 
 
 @dataclass
 class RallyData:
     """
     Individual rally from ML analysis.
-    Maps to domain Rally entity (only duration is stored).
+    Rallies are match-level, not player-specific.
     """
     rally_id: int
     duration_seconds: float
@@ -39,7 +44,7 @@ class RallyData:
 class HeatmapData:
     """
     Heatmap output from ML analysis.
-    Maps to domain Heatmap entity (stores binary PNG).
+    Only generated for player_1 and player_2.
     """
     player_identifier: str
     image_path: Path  # Temp file path - read as bytes for storage
@@ -47,8 +52,8 @@ class HeatmapData:
 
 @dataclass
 class MLAnalysisResult:
-    """Complete result from ML pipeline"""
-    player_stats: Dict[str, PlayerStats]  # keyed by player_identifier
+    """Complete result from ML pipeline - only includes tracked players"""
+    player_stats: Dict[str, PlayerStats]  # keyed by player_identifier (player_1, player_2)
     rallies: List[RallyData]
     heatmaps: Dict[str, HeatmapData]  # keyed by player_identifier
     total_rallies: int
@@ -62,8 +67,12 @@ class MLService:
     Responsibilities:
     - Run the inference pipeline
     - Parse CSV outputs from the pipeline
-    - Generate heatmaps for specific players
+    - Generate heatmaps for player_1 and player_2 only
     - Transform results into domain-compatible format
+    
+    Design Decision:
+    - Only tracks player_1 and player_2 (near-side of court)
+    - player_3 and player_4 (far-side) don't get meaningful tracking data
     """
     
     def __init__(
@@ -80,14 +89,12 @@ class MLService:
             court_config_path: Path to court_information.json
             output_dir: Directory for pipeline outputs
         """
-        # Default paths relative to deep_learning folder
         base_dir = Path(__file__).parent / "deep_learning"
         
         self.models_dir = models_dir or base_dir / "models"
         self.court_config_path = court_config_path or base_dir / "court_info" / "court_information.json"
         self.output_dir = output_dir or base_dir / "output_videos"
         
-        # Ensure output dir exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
     
     async def run_analysis(
@@ -105,9 +112,8 @@ class MLService:
             fps: Video framerate
             
         Returns:
-            MLAnalysisResult with all analysis data
+            MLAnalysisResult with data for player_1 and player_2 only
         """
-        # Run in thread pool since inference is CPU/GPU bound
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
@@ -125,7 +131,6 @@ class MLService:
     ) -> MLAnalysisResult:
         """Synchronous analysis - runs in thread pool"""
         
-        # Build argument list for the pipeline
         video_stem = video_path.stem
         output_subdir = self.output_dir / video_stem
         output_subdir.mkdir(parents=True, exist_ok=True)
@@ -133,8 +138,8 @@ class MLService:
         print(f"[MLService] Starting analysis for: {video_path}", flush=True)
         print(f"[MLService] Court number: {court_number}", flush=True)
         print(f"[MLService] Output dir: {output_subdir}", flush=True)
+        print(f"[MLService] Tracking players: {TRACKED_PLAYERS}", flush=True)
         
-        # Build typed configuration
         config = self._build_pipeline_config(
             video_path=video_path,
             court_number=court_number,
@@ -142,25 +147,22 @@ class MLService:
             fps=fps
         )
         
-        # Run the main pipeline
         run_main_pipeline(config)
         
         print(f"[MLService] Pipeline complete, parsing results...", flush=True)
         
-        # Parse outputs - note: filenames from get_output_paths
+        # Parse outputs - only for tracked players
         player_stats = self._parse_shot_csv(output_subdir / f"{video_stem}_shots.csv")
         rallies = self._parse_rally_csv(output_subdir / f"{video_stem}_rallies.csv", fps)
         
-        # Generate per-player heatmaps
+        # Generate per-player heatmaps (only for tracked players)
         heatmaps = {}
         player_csv = output_subdir / f"{video_stem}_player_positions.csv"
         court_frame = output_subdir / f"{video_stem}_court_frame.png"
         
-        print(f"[MLService] Generating per-player heatmaps...", flush=True)
-        print(f"[MLService] Player CSV exists: {player_csv.exists()}", flush=True)
-        print(f"[MLService] Court frame exists: {court_frame.exists()}", flush=True)
+        print(f"[MLService] Generating heatmaps for tracked players only...", flush=True)
         
-        # Map ML track_ids to our player identifiers
+        # Map ML track_ids to our player identifiers (only near-side)
         track_to_player = {
             1: "player_1",
             2: "player_2",
@@ -183,7 +185,7 @@ class MLService:
             else:
                 print(f"[MLService] Failed to generate heatmap for {player_id}", flush=True)
         
-        print(f"[MLService] Analysis complete. Rallies: {len(rallies)}, Heatmaps: {len(heatmaps)}", flush=True)
+        print(f"[MLService] Analysis complete. Players: {len(player_stats)}, Rallies: {len(rallies)}, Heatmaps: {len(heatmaps)}", flush=True)
         
         return MLAnalysisResult(
             player_stats=player_stats,
@@ -205,7 +207,7 @@ class MLService:
         
         # Video settings
         config.video.input_path = str(video_path)
-        config.video.output_path = None  # Auto-generated
+        config.video.output_path = None
         config.video.output_dir = str(output_dir)
         config.video.fps = fps
         
@@ -221,7 +223,6 @@ class MLService:
         config.models.shot_classifier = str(self.models_dir / "best_model.pth")
         config.models.yolo_pose = str(self.models_dir / "yolov8n-pose.pt")
         
-        # Stubs disabled for real inference
         config.stubs.use_stubs = False
         
         # Ball detection
@@ -246,31 +247,33 @@ class MLService:
         config.shot.yolo_resolution = (640, 360)
         config.shot.classifier_resolution = 128
         
-        # Heatmap settings
+        # Heatmap settings - only for player 1 and 2
         config.heatmap.bins_x = 200
         config.heatmap.bins_y = 100
         config.heatmap.gaussian_sigma = 9
         config.heatmap.inplay_only = False
-        config.heatmap.players_filter = "1,2"
+        config.heatmap.players_filter = "1,2"  # Only track near-side players
         config.heatmap.alpha = 0.7
         config.heatmap.show_axes = False
         
         return config
     
     def _parse_shot_csv(self, csv_path: Path) -> Dict[str, PlayerStats]:
-        """Parse shot classification CSV output"""
+        """
+        Parse shot classification CSV output.
+        Only returns stats for player_1 and player_2.
+        """
+        # Initialize only for tracked players
         stats = {
-            "player_1": PlayerStats(player_identifier="player_1"),
-            "player_2": PlayerStats(player_identifier="player_2"),
-            "player_3": PlayerStats(player_identifier="player_3"),
-            "player_4": PlayerStats(player_identifier="player_4"),
+            player_id: PlayerStats(player_identifier=player_id)
+            for player_id in TRACKED_PLAYERS
         }
         
+        # ML track_id to our player identifier mapping
+        # Only map track IDs that correspond to near-side players
         track_id_to_player = {
             "0": "player_1",
             "2": "player_2",
-            "1": "player_3",
-            "3": "player_4",
         }
         
         if not csv_path.exists():
@@ -284,9 +287,10 @@ class MLService:
                     raw_player_id = str(row.get('player_id', '')).strip()
                     shot_type = row.get('shot_type', '').lower().strip()
                     
+                    # Only process tracked players
                     player_id = track_id_to_player.get(raw_player_id)
                     if not player_id:
-                        print(f"[MLService] Unknown player_id in CSV: {raw_player_id}", flush=True)
+                        # Skip far-side players (player_3, player_4)
                         continue
                     
                     player = stats[player_id]
@@ -296,8 +300,8 @@ class MLService:
                         player.lob += 1
                     elif shot_type == 'serve':
                         player.serve += 1
-                    elif shot_type == 'backhand':
-                        player.backhand += 1
+                    elif shot_type == 'groundstrokes':
+                        player.groundstrokes += 1  # Changed from backhand
                     elif shot_type in ['smash', 'overhead']:
                         player.overhead_hits += 1
                     
