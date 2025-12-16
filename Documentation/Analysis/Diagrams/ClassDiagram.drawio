@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.7">
   <diagram name="Page-1" id="6133507b-19e7-1e82-6fc7-422aa6c4b21f">
-    <mxGraphModel dx="2951" dy="1486" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+    <mxGraphModel dx="5165" dy="2600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -2391,6 +2391,9 @@
             <mxPoint x="180" y="80" as="targetPoint" />
           </mxGeometry>
         </mxCell>
+        <mxCell id="EcKh1DN9XXMzYpiDWdom-220" parent="EcKh1DN9XXMzYpiDWdom-1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fontColor=#000000;darkOpacity=0.05;fillColor=#FFF9B2;strokeColor=none;fillStyle=solid;direction=west;gradientDirection=north;gradientColor=#FFF2A1;shadow=1;size=20;pointerEvents=1;" value="&lt;u&gt;xRepository uses xModel&lt;/u&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;If connection is shown, it&#39;s additional to it&#39;s own xModel (E.g. SummaryMetricsRepository)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="280" x="2570" y="40" as="geometry" />
+        </mxCell>
         <mxCell id="EcKh1DN9XXMzYpiDWdom-8" parent="ZGhB0LwPavC_6AY9adfy-6" style="swimlane;html=1;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;swimlaneFillColor=#ffffff;rounded=0;shadow=0;comic=0;labelBackgroundColor=none;strokeWidth=1;fillColor=none;fontFamily=Verdana;fontSize=12" value="&amp;lt;&amp;lt;sqlalchemy.orm&amp;gt;&amp;gt;&lt;div&gt;DeclarativeBase&lt;/div&gt;" vertex="1">
           <mxGeometry height="48" width="160" x="270" y="5026" as="geometry" />
         </mxCell>
@@ -2553,8 +2556,21 @@
         <mxCell id="1A_ndONoxLU6f_MG9vlO-1273" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fontColor=#000000;darkOpacity=0.05;fillColor=#FFF9B2;strokeColor=none;fillStyle=solid;direction=west;gradientDirection=north;gradientColor=#FFF2A1;shadow=1;size=20;pointerEvents=1;" value="&lt;b&gt;connection&lt;/b&gt;&lt;div&gt;&lt;ul&gt;&lt;li style=&quot;text-align: left;&quot;&gt;Belongs in &lt;u&gt;data layer&lt;/u&gt; but placed here for a better overview&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="160" width="140" x="110" y="420" as="geometry" />
         </mxCell>
+        <mxCell id="EcKh1DN9XXMzYpiDWdom-217" edge="1" parent="1" source="EcKh1DN9XXMzYpiDWdom-105" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endArrow=open;endFill=0;" target="EcKh1DN9XXMzYpiDWdom-2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3920" y="5936" />
+              <mxPoint x="3920" y="5420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EcKh1DN9XXMzYpiDWdom-219" connectable="0" parent="EcKh1DN9XXMzYpiDWdom-217" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&amp;lt;&amp;lt;uses&amp;gt;&amp;gt;" vertex="1">
+          <mxGeometry relative="1" x="0.4466" y="-7" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
         <mxCell id="EcKh1DN9XXMzYpiDWdom-105" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;" value="repositories" vertex="1">
-          <mxGeometry height="590" width="2950" x="820" y="5640" as="geometry" />
+          <mxGeometry height="590" width="2950" x="820" y="5641" as="geometry" />
         </mxCell>
         <mxCell id="EcKh1DN9XXMzYpiDWdom-106" parent="EcKh1DN9XXMzYpiDWdom-105" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fad9d5;strokeColor=#ae4132;" value="interfaces" vertex="1">
           <mxGeometry height="350" width="2502.5" x="427.5" y="50" as="geometry" />
@@ -2873,6 +2889,16 @@
             </Array>
             <mxPoint x="2409.9999999999995" y="2930" as="sourcePoint" />
             <mxPoint x="1825.0000000000005" y="5750" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EcKh1DN9XXMzYpiDWdom-221" edge="1" parent="1" source="EcKh1DN9XXMzYpiDWdom-144" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=open;endFill=0;dashed=1;" target="EcKh1DN9XXMzYpiDWdom-55">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1700" y="6191" />
+              <mxPoint x="1700" y="5650" />
+              <mxPoint x="1630" y="5650" />
+              <mxPoint x="1630" y="5567" />
+            </Array>
           </mxGeometry>
         </mxCell>
       </root>
