@@ -145,32 +145,3 @@ class TestGetMatchOverview:
         
         with pytest.raises(DataUnavailableException):
             await match_service.get_match_overview(match_id=1)
-
-class TestGetPlayerHitCount:
-    
-    @pytest.mark.asyncio
-    async def test_get_player_hit_count_success(
-        self,
-        match_service,
-        mock_repos,
-        sample_data
-    ):
-        mock_repos["match"].get_by_id.return_value = sample_data["match"]
-        mock_repos["player"].get_by_identifier.return_value = sample_data["match_players"][0]
-        mock_repos["metrics"].get_by_match_player_id.return_value = sample_data["metrics"][0]
-        
-        result = await match_service.get_player_hit_count(1, "player_1")
-        assert result == 10
-
-    @pytest.mark.asyncio
-    async def test_get_player_hit_count_not_found(
-        self,
-        match_service,
-        mock_repos,
-        sample_data
-    ):
-        mock_repos["match"].get_by_id.return_value = sample_data["match"]
-        mock_repos["player"].get_by_identifier.return_value = None
-        
-        with pytest.raises(PlayerInMatchNotFoundException):
-            await match_service.get_player_hit_count(1, "unknown")

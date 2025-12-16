@@ -261,7 +261,6 @@ Backend/src/
 │   │   └── controllers/                # FastAPI Routers
 │   │       ├── __init__.py
 │   │       ├── auth_controller.py
-│   │       ├── player_controller.py
 │   │       ├── video_controller.py
 │   │       ├── match_controller.py
 │   │       ├── heatmap_controller.py
