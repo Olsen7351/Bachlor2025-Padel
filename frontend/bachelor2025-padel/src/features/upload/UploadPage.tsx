@@ -3,8 +3,9 @@ import Animation from "../../globalComponents/Animation";
 import { ArrowUpOnSquareStackIcon } from "@heroicons/react/24/outline";
 import {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
+import {apiFetch} from "../../utils/apiFetch.ts";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const UploadPage = () => {
     const navigate = useNavigate();
@@ -16,7 +17,7 @@ const UploadPage = () => {
 
 
     useEffect(() => {
-        fetch(`${API_BASE}/auth/me`, {
+        apiFetch(`${API_BASE}/auth/me`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("idToken")}`,
@@ -34,7 +35,7 @@ const UploadPage = () => {
         const intervalMs = 2 * 60_000;
 
         while (Date.now() - start < timeoutMs) {
-            const res = await fetch(`${API_BASE}/matches/${matchId}/overview`, {
+            const res = await apiFetch(`${API_BASE}/matches/${matchId}/overview`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("idToken")}`,
                 },
@@ -67,7 +68,7 @@ const UploadPage = () => {
             form.append("file", file);
             form.append("court_number", String(courtNumber));
 
-            const res = await fetch(`${API_BASE}/videos/upload`, {
+            const res = await apiFetch(`${API_BASE}/videos/upload`, {
                 method: "POST",
                 body: form,
                 headers: {
@@ -122,7 +123,7 @@ const UploadPage = () => {
                                     id="upload"
                                     className="sr-only"
                                     disabled={isUploading}
-                                    accept="video/*"
+                                    accept="video/mp4, video/mov, video/avi"
                                     onChange={(e) => {
                                         const f = e.target.files?.[0] ?? null;
                                         setFile(f);

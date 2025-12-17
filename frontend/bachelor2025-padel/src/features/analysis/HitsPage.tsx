@@ -20,17 +20,17 @@ interface MatchOverview {
     created_at: string;
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 const HitsPage = () => {
     const { videoId } = useParams();
     const [overview, setOverview] = useState<MatchOverview | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const PLAYER_LABELS: Record<string, "VENSTRE" | "HØJRE"> = {
-        player_1: "HØJRE",
-        player_2: "VENSTRE",
+    const PLAYER_LABELS: Record<string, "SPILLER 1" | "SPILLER 2"> = {
+        player_1: "SPILLER 1",
+        player_2: "SPILLER 2",
     };
-
-    const PLAYER_ORDER: Array<"VENSTRE" | "HØJRE"> = ["VENSTRE", "HØJRE"];
 
 
 
@@ -38,7 +38,7 @@ const HitsPage = () => {
         const fetchData = async () => {
             try {
                 const res = await fetch(
-                    `http://localhost:8000/api/matches/${videoId}/overview`,
+                    `${API_BASE}/matches/${videoId}/overview`,
                     {
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem("idToken")}`,
@@ -68,7 +68,7 @@ const HitsPage = () => {
     const sortedPlayers = [...overview.player_statistics].sort((a, b) => {
         const la = PLAYER_LABELS[a.player_identifier] ?? a.player_identifier;
         const lb = PLAYER_LABELS[b.player_identifier] ?? b.player_identifier;
-        return PLAYER_ORDER.indexOf(la as any) - PLAYER_ORDER.indexOf(lb as any);
+        return la.localeCompare(lb);
     });
 
 

@@ -7,9 +7,6 @@ import heatmapPicture from "../../assets/heatmap.png"
 
 const AnalysisDashboard = () => {
     const navigate = useNavigate();
-
-
-
     return (
         <>
                 <ParticleBackground />
