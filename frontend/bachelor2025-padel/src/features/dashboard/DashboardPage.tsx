@@ -58,7 +58,7 @@ const DashboardPage = () =>{
             setError(null);
 
             try {
-                const res = await apiFetch(`${API_BASE}/videos/analyzed`, {
+                const res = await apiFetch(`${API_BASE}/videos/myVideos`, {
                     method: "GET",
                 });
 
@@ -191,11 +191,12 @@ const DashboardPage = () =>{
 
                                 {pagedVideos.map((v) => (
                                     <div
-                                        onClick={() => navigate(`/matches/${v.id}/overview`)}
+                                        onClick={() => v.status === "analyzed" ? navigate(`/matches/${v.id}/overview`)
+                                            : alert("Kampen er stadig under analyse.")}
                                         key={v.id}
-                                        className="grid grid-cols-12 gap-4 px-6 py-4
-                                        cursor-pointer hover:bg-gray-900 transition
-                                        border-b border-gray-100 items-center"
+                                        className={`${v.status === "analyzed" ? "cursor-pointer" : "cursor-no-drop" } grid grid-cols-12 gap-4 px-6 py-4
+                                       hover:bg-gray-900 transition
+                                        border-b border-gray-100 items-center`}
                                     >
                                         <div className="col-span-4">
                                             <div className="font-medium">{v.file_name}</div>
@@ -214,7 +215,7 @@ const DashboardPage = () =>{
                                         </div>
 
                                         <div
-                                            className="col-span-2 text-right"
+                                            className={`${v.status !== "analyzed" ? "hidden" : ""} col-span-2 text-right`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 navigator.clipboard.writeText(`/matches/${v.id}/overview`)
