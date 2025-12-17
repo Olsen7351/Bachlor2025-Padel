@@ -177,19 +177,19 @@ async def upload_video(
     
 
 @router.get(
-        "/analyzed",
+        "/myVideos",
         response_model=PlayerVideosResponse,
         status_code=status.HTTP_200_OK,
-        summary="Get player's analyzed videos"
+        summary="Get player's videos"
 )
-async def get_player_analyzed_videos(
+async def get_player_videos(
     current_user: Player = Depends(get_current_user),
     video_service: IVideoService = Depends(get_video_service)
 ) -> PlayerVideosResponse:
     """
-    Get all analyzed videos for the authenticated player.
+    Get all videos for the authenticated player.
     """
-    videos = await video_service.get_player_analyzed_videos(
+    videos = await video_service.get_player_videos(
         player_id=current_user.id
     )
 
@@ -237,6 +237,12 @@ async def process_video_analysis(
                 video_id=video_id,
                 player_id=player_id
             )
+
+            # Save match_id so the object can be detached
+            match_id = analysis.match_id
+
+            # Commit analysis creation
+            await session.commit()
             
             # Step 2: Run ML analysis
             ml_result = await analysis_service.run_ml_analysis(
@@ -247,7 +253,7 @@ async def process_video_analysis(
             
             # Step 3: Store results
             await analysis_service.store_analysis_results(
-                match_id=analysis.match_id,
+                match_id=match_id,
                 ml_result=ml_result
             )
             

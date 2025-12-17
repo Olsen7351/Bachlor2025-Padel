@@ -162,9 +162,9 @@ class VideoRepository(IVideoRepository):
         
         return result.rowcount > 0
     
-    async def get_analyzed_by_player_id(self, player_id: str) -> List[Video]:
+    async def get_videos_by_player_id(self, player_id: str) -> List[Video]:
         """
-        Get all analyzed videos for a specific player.
+        Get all videos for a specific player.
         
         Joins Video with Analysis to filter by player_id.
         """
@@ -173,7 +173,6 @@ class VideoRepository(IVideoRepository):
             .join(AnalysisModel, AnalysisModel.video_id == VideoModel.id)
             .where(
                 AnalysisModel.player_id == player_id,
-                VideoModel.status == VideoStatus.ANALYZED.value,
                 VideoModel.is_deleted == False
             )
             .order_by(VideoModel.upload_timestamp.asc())
