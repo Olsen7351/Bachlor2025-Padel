@@ -4,7 +4,7 @@ import { ArrowUpOnSquareStackIcon } from "@heroicons/react/24/outline";
 import {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+const API_BASE = "http://localhost:8000/api";
 
 const UploadPage = () => {
     const navigate = useNavigate();
@@ -122,7 +122,7 @@ const UploadPage = () => {
                                     id="upload"
                                     className="sr-only"
                                     disabled={isUploading}
-                                    accept="video/*"
+                                    accept="video/mp4, video/mov, video/avi"
                                     onChange={(e) => {
                                         const f = e.target.files?.[0] ?? null;
                                         setFile(f);

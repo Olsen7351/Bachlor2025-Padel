@@ -1,19 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import {useEffect, useMemo, useState} from "react";
+import {useParams} from "react-router-dom";
 import ParticleBackground from "../../globalComponents/ParticleBackground";
 import Animation from "../../globalComponents/Animation";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+const API_BASE = "http://localhost:8000/api";
 
-type SideLabel = "VENSTRE" | "HØJRE";
 type PlayerId = "player_1" | "player_2";
 
-const PLAYER_TO_SIDE: Record<PlayerId, SideLabel> = {
-    player_1: "HØJRE",
-    player_2: "VENSTRE",
+const PLAYER_LABELS: Record<string, "SPILLER 1" | "SPILLER 2"> = {
+    player_1: "SPILLER 1",
+    player_2: "SPILLER 2",
 };
-
-const SIDES_ORDER: SideLabel[] = ["VENSTRE", "HØJRE"];
 
 async function fetchHeatmapUrl(matchId: string, playerId: PlayerId): Promise<string> {
     const res = await fetch(`${API_BASE}/heatmaps/matches/${matchId}/players/${playerId}/image`, {
@@ -78,13 +75,11 @@ const HeatmapPage = () => {
     }, [videoId]);
 
     const cards = useMemo(() => {
-        const raw = [
-            { playerId: "player_1" as const, side: PLAYER_TO_SIDE.player_1, url: p1Url },
-            { playerId: "player_2" as const, side: PLAYER_TO_SIDE.player_2, url: p2Url },
+        return [
+            {playerId: "player_1" as const, side: PLAYER_LABELS.player_1, url: p1Url},
+            {playerId: "player_2" as const, side: PLAYER_LABELS.player_2, url: p2Url},
         ];
-
-        return raw.sort((a, b) => SIDES_ORDER.indexOf(a.side) - SIDES_ORDER.indexOf(b.side));
-    }, [p1Url, p2Url]);
+        }, [p1Url, p2Url]);
 
     return (
         <div className="relative min-h-screen bg-black overflow-hidden">
@@ -119,7 +114,7 @@ const HeatmapPage = () => {
                                             </>
                                         ) : (
                                             <div className="absolute inset-0 flex items-center justify-center text-white/60">
-                                                Ingen billede
+                                                Intet billede
                                             </div>
                                         )}
                                     </div>

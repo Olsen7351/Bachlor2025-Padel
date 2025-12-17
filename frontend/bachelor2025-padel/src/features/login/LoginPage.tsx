@@ -49,7 +49,7 @@ const LoginPage = () => {
             const { idToken } = await firebaseLogin(email, password);
             await backendLogin(idToken);
             localStorage.setItem("idToken", idToken);
-            navigate("/upload");
+            navigate("/dashboard");
         } catch (e: any) {
             setError("Forkert email eller adgangskode.");
         } finally {
@@ -63,7 +63,7 @@ const LoginPage = () => {
                 <ParticleBackground />
 
                 <Animation>
-                    <div className="relative z-10 h-screen flex flex-col justify-center items-center">
+                    <div className="relative z-10 h-screen flex flex-col gap-4 justify-center items-center">
                         <div className="flex flex-col gap-2 justify-center items-center mb-8">
                             <h1 className="text-6xl">Velkommen til ViborAI</h1>
                             <h2 className="text-2xl">Padelkampe på et nyt niveau</h2>
@@ -110,6 +110,8 @@ const LoginPage = () => {
                                 {isSubmitting ? "Logger ind..." : "Log ind"}
                             </button>
                         </form>
+
+                        <h1 onClick={() => navigate("/register")} className="text-gray-500 cursor-pointer">Har du ikke en bruger? Registrer dig i dag!</h1>
                     </div>
                 </Animation>
             </div>
