@@ -1,11 +1,33 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, BinaryIO, Dict
+from typing import Optional, List, BinaryIO, Dict, Any
 from pathlib import Path
 
 from ...domain.player import Player
-from ...domain.video import Video, VideoStatus
+from ...domain.video import Video
 from ...domain.analysis import Analysis
+from .results.heatmap_results import (
+    PlayerHeatmapResult,
+    HeatmapComparisonResult
+)
+from .deep_learning.results import MLAnalysisResult
 
+class IAuthService(ABC):
+    """Interface for Authentication business operations"""
+    
+    @abstractmethod
+    async def verify_token(self, id_token: str) -> Dict[str, Any]:
+        """Verify token and return decoded payload"""
+        pass
+
+    @abstractmethod
+    async def get_user_by_uid(self, uid: str) -> Dict[str, Any]:
+        """Get user details from Firebase by UID"""
+        pass
+
+    @abstractmethod
+    async def create_custom_token(self, uid: str, additional_claims: Optional[Dict] = None) -> str:
+        """Create a custom Firebase token for a user"""
+        pass
 
 class IPlayerService(ABC):
     """Interface for Player business operations"""
@@ -26,10 +48,6 @@ class IPlayerService(ABC):
         """Get player by ID"""
         pass
     
-    @abstractmethod
-    async def get_all_players(self) -> List[Player]:
-        """Get all players"""
-        pass
 
 
 class IFileStorageService(ABC):
@@ -113,15 +131,6 @@ class IMatchService(ABC):
         Implements UC-04 Success Scenario S1
         """
         pass
-    
-    @abstractmethod
-    async def get_player_hit_count(
-        self, 
-        match_id: int, 
-        player_identifier: str
-    ) -> int:
-        """Get hit count for a specific player in a match"""
-        pass
 
 
 class IRallyService(ABC):
@@ -144,11 +153,6 @@ class IRallyService(ABC):
     async def get_rally_duration_distribution(self, match_id: int) -> Dict:
         """Get rally duration distribution for visualization"""
         pass
-    
-    @abstractmethod
-    async def get_match_total_rallies(self, match_id: int) -> int:
-        """Get total rally count for a match"""
-        pass
 
 
 class IHeatmapService(ABC):
@@ -159,7 +163,7 @@ class IHeatmapService(ABC):
         self, 
         match_id: int, 
         player_identifier: str
-    ):
+    ) -> PlayerHeatmapResult:
         """
         UC-02 S1: Get heatmap for a specific player in a match
         
@@ -182,7 +186,7 @@ class IHeatmapService(ABC):
         self, 
         match_id: int,
         player_identifiers: Optional[List[str]] = None
-    ):
+    ) -> HeatmapComparisonResult:
         """UC-02 S2: Get multiple heatmaps for comparison"""
         pass
     
@@ -234,3 +238,32 @@ class IAnalysisService(ABC):
         """Mark analysis as complete (or failed)"""
         pass
     
+
+class IMLService(ABC):
+    """Interface for ML inference operations"""
+
+    @abstractmethod
+    async def run_analysis(
+        self,
+        video_path: Path,
+        court_number: int,
+        fps: float = 30.0
+    ) -> MLAnalysisResult:
+        """
+        Run full ML analysis pipeline on a video.
+        
+        Args:
+            video_path: Path to the video file
+            court_number: Court number for calibration lookup
+            fps: Video framerate
+            
+        Returns:
+            MLAnalysisResult with player stats, rallies, and heatmaps
+        """
+        pass
+
+    @abstractmethod
+    def read_heatmap_binary(self, heatmap_path: Path) -> Optional[bytes]:
+        """Read heatmap PNG as binary data for database storage"""
+        pass
+

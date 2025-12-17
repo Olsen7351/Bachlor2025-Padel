@@ -6,7 +6,6 @@ from datetime import datetime
 
 from .data.connection import create_tables
 from .config import get_settings
-from .presentation.controllers.player_controller import router as player_router
 from .presentation.controllers.auth_controller import router as auth_router
 from .presentation.controllers.video_controller import router as video_router
 from .presentation.controllers.match_controller import router as match_router
@@ -236,7 +235,6 @@ async def rally_data_unavailable_handler(request: Request, exc: RallyDataUnavail
 # ============================================================================
 
 app.include_router(auth_router, prefix="/api")
-app.include_router(player_router, prefix="/api")
 app.include_router(video_router, prefix="/api")
 app.include_router(match_router, prefix="/api")
 app.include_router(heatmap_router, prefix="/api")
@@ -244,7 +242,7 @@ app.include_router(rally_router, prefix="/api")
 
 
 # ============================================================================
-# Root & Health Endpoints
+# Default Endpoints
 # ============================================================================
 
 @app.get("/")
@@ -263,26 +261,4 @@ async def root():
             "heatmaps": "/api/heatmaps",
             "rallies": "/api/rallies"
         }
-    }
-
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy", 
-        "timestamp": datetime.utcnow(),
-        "database": settings.is_database_available(),
-        "firebase": settings.validate_firebase_config(),
-        "upload_directory": settings.video_upload_dir
-    }
-
-
-@app.get("/api/config/upload")
-async def get_upload_config():
-    """Public endpoint to get upload configuration"""
-    return {
-        "max_file_size_mb": settings.video_max_file_size_mb,
-        "max_file_size_bytes": settings.video_max_file_size_bytes,
-        "allowed_formats": settings.video_allowed_formats,
-        "upload_directory": settings.video_upload_dir
     }

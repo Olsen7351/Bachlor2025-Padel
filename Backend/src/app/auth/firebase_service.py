@@ -3,9 +3,10 @@ from firebase_admin import credentials, auth
 from typing import Optional, Dict, Any
 from ..business.exceptions import AuthenticationException
 from ..config import get_settings, get_firebase_config
+from ..business.services.interfaces import IAuthService
 
-class FirebaseService:
-    """Service for Firebase authentication operations"""
+class FirebaseService(IAuthService):
+    """Service for Firebase authentication operations - implements IAuthService"""
     
     def __init__(self):
         if not firebase_admin._apps:

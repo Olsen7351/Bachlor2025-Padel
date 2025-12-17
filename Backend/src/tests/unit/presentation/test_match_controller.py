@@ -166,25 +166,3 @@ class TestMatchController:
         
         assert exc_info.value.status_code == 503
         assert exc_info.value.detail["status"] == "data_unavailable"
-
-    # ===================================================================
-    # Specific Player Hit Count
-    # ===================================================================
-    
-    @pytest.mark.asyncio
-    async def test_get_player_hit_count_success(
-        self,
-        mock_player,
-        mock_match_service
-    ):
-        mock_match_service.get_player_hit_count.return_value = 245
-        
-        from app.presentation.controllers.match_controller import get_player_hit_count
-        
-        response = await get_player_hit_count(
-            match_id=1,
-            player_identifier="player_1",
-            current_user=mock_player,
-            match_service=mock_match_service
-        )
-        assert response == 245

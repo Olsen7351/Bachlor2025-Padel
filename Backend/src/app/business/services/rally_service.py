@@ -1,5 +1,4 @@
-from typing import Dict, List
-from dataclasses import dataclass
+from typing import Dict
 
 from .interfaces import IRallyService
 from ..exceptions import (
@@ -12,17 +11,6 @@ from ...data.repositories.interfaces import (
     ISummaryMetricsRepository,
     IRallyRepository
 )
-
-
-@dataclass
-class RallyAnalysis:
-    """Result object for rally analysis - UC-08 S1"""
-    total_rallies: int
-    average_duration: float
-    min_duration: float
-    max_duration: float
-    rally_durations: List[float]  # All individual durations
-
 
 class RallyService(IRallyService):
     """
@@ -189,18 +177,3 @@ class RallyService(IRallyService):
             "total_rallies": total,
             "distribution": distribution
         }
-    
-    async def get_match_total_rallies(self, match_id: int) -> int:
-        """
-        Get total rally count for a match.
-        Lightweight query for summary displays.
-        
-        Returns:
-            Total number of rallies
-            
-        Raises:
-            MatchNotFoundException: If match doesn't exist
-            RallyDataUnavailableException: If rally data not available
-        """
-        analysis = await self.get_rally_analysis(match_id)
-        return analysis["total_rallies"]

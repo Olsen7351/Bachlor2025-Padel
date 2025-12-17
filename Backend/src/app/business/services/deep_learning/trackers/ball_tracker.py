@@ -8,7 +8,7 @@ from typing import List, Dict, Tuple, Optional
 
 
 # ============================================================================
-# TRACKNET MODEL ARCHITECTURE (Single Source of Truth)
+# TRACKNET MODEL ARCHITECTURE
 # ============================================================================
 
 class Conv2DBlock(nn.Module):

@@ -268,9 +268,3 @@ class TestVideoController:
         
         assert exc_info.value.status_code == 500
         mock_session.rollback.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_get_upload_config(self, mock_video_service):
-        from app.presentation.controllers.video_controller import get_upload_config
-        response = await get_upload_config(video_service=mock_video_service)
-        assert "max_file_size_mb" in response
