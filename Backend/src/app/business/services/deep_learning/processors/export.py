@@ -55,8 +55,8 @@ def export_player_positions_csv(
                 if pts_m.size > 0 and np.all(np.isfinite(pts_m[0])):
                     x_m, y_m = pts_m[0]
                     # Validate within court bounds
-                    if not (0 <= x_m <= court_w and 0 <= y_m <= court_h):
-                        x_m, y_m = np.nan, np.nan
+                    if not (0 <= x_m <= (court_w / 2) and 0 <= y_m <= court_h):
+                        continue
             
             # Determine if frame is during a rally
             in_play = 1 if rally_frames and frame_idx in rally_frames else 0

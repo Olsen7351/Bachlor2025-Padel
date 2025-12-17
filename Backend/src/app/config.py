@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # Video Upload Settings
     video_upload_dir: str = "uploads/videos"
     video_max_file_size_mb: int = 2000  # 2 GB - allows 10-15 min videos at 1080p
-    video_allowed_formats: list[str] = ["mp4", "avi", "mov", "mkv", "webm"]
+    video_allowed_formats: list[str] = ["mp4", "avi", "mov"]
 
     # Firebase Configuration
     firebase_project_id: Optional[str] = None

@@ -5,6 +5,7 @@ from datetime import datetime
 
 from ...domain.video import Video, VideoStatus
 from ..models.video_model import VideoModel
+from ..models.analysis_model import AnalysisModel
 from .interfaces import IVideoRepository
 
 
@@ -160,3 +161,25 @@ class VideoRepository(IVideoRepository):
         await self.session.flush()
         
         return result.rowcount > 0
+    
+    async def get_analyzed_by_player_id(self, player_id: str) -> List[Video]:
+        """
+        Get all analyzed videos for a specific player.
+        
+        Joins Video with Analysis to filter by player_id.
+        """
+        stmt = (
+            select(VideoModel)
+            .join(AnalysisModel, AnalysisModel.video_id == VideoModel.id)
+            .where(
+                AnalysisModel.player_id == player_id,
+                VideoModel.status == VideoStatus.ANALYZED.value,
+                VideoModel.is_deleted == False
+            )
+            .order_by(VideoModel.upload_timestamp.asc())
+        )
+
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+
+        return [self._to_domain(model) for model in models]
