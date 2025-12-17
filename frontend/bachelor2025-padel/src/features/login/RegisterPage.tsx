@@ -8,6 +8,7 @@ import Animation from "../../globalComponents/Animation.tsx";
 export default function RegisterPage() {
     const navigate = useNavigate();
 
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,6 +21,11 @@ export default function RegisterPage() {
 
         if (password !== confirmPassword) {
             setError("Adgangskoderne matcher ikke.");
+            return;
+        }
+
+        if (name.trim().length === 0 || name.trim().length > 100) {
+            setError("Navn skal være mellem 1 og 100 tegn.");
             return;
         }
 
@@ -70,6 +76,15 @@ export default function RegisterPage() {
                         className="flex flex-col gap-6 justify-center items-center"
                         onSubmit={handleRegister}
                     >
+                        <input
+                            type="text"
+                            placeholder="Navn"
+                            className="border border-gray-300 rounded-md p-2 w-64"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+
                         <input
                             type="email"
                             placeholder="Email"

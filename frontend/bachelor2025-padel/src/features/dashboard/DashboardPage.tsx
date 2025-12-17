@@ -36,8 +36,20 @@ const DashboardPage = () =>{
     const [videos, setVideos] = useState<Video[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
     const idToken = useMemo(() => localStorage.getItem("idToken"), []);
+
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
+    const total = videos?.length ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    const pagedVideos = (videos ?? []).slice((page - 1) * pageSize, page * pageSize);
+
+    useEffect(() => {
+        if (page > totalPages) setPage(totalPages);
+        if (page < 1) setPage(1);
+    }, [totalPages, page]);
+
 
     useEffect(() => {
         async function fetchVideos() {
@@ -64,7 +76,10 @@ const DashboardPage = () =>{
                 }
 
                 const list: Video[] = Array.isArray(data) ? data : (data?.videos ?? []);
-                setVideos(list);
+                const sortedList = list.sort((a, b) =>
+                    new Date(b.upload_timestamp).getTime() - new Date(a.upload_timestamp).getTime());
+                setVideos(sortedList);
+                setPage(1);
             } catch (e: any) {
                 if (e?.name === "AbortError") return;
                 setError(e?.message ?? "Noget gik galt ved hentning af kampe.");
@@ -93,7 +108,7 @@ const DashboardPage = () =>{
 
             <Animation>
                 <div className="relative z-10 min-h-screen flex flex-col items-center px-6 py-10">
-                    <div className="w-full max-w-5xl flex items-center justify-between mb-8">
+                    <div className="w-full max-w-9xl flex items-center justify-between mb-8">
                         <div>
                             <h1 className="text-5xl">Dashboard</h1>
                         </div>
@@ -101,14 +116,14 @@ const DashboardPage = () =>{
                         <div>
                             <button
                                 onClick={() => navigate("/upload")}
-                                className="border border-gray-300 rounded-md px-4 py-2 hover:scale-110 transition"
+                                className="border border-gray-300 rounded-md px-4 py-2 hover:scale-110 transition cursor-pointer"
                             >
                                 Upload kamp
                             </button>
                         </div>
                     </div>
 
-                    <div className="w-full max-w-5xl">
+                    <div className="w-full max-w-8xl">
                         {isLoading && (
                             <div className="border border-gray-200 rounded-xl p-6 backdrop-blur-xs">
                                 Henter kampe...
@@ -137,40 +152,83 @@ const DashboardPage = () =>{
                         )}
 
                         {!isLoading && !error && videos && videos.length > 0 && (
-                            <div className="border border-gray-200 rounded-xl backdrop-blur-xs overflow-hidden">
-                                <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 text-sm">
-                                    <div className="col-span-5">Filnavn</div>
-                                    <div className="col-span-2">Status</div>
-                                    <div className="col-span-3">Uploadet</div>
-                                    <div className="col-span-2 text-right">Længde</div>
+                            <>
+                            <div className="w-full flex items-center justify-between mb-3">
+                                <div className="text-sm">
+                                    Viser {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} af {total}
                                 </div>
 
-                                {videos.map((m) => (
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        className="border border-gray-300 rounded-md px-3 py-1 disabled:opacity-50"
+                                        disabled={page === 1}
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    >
+                                        Forrige
+                                    </button>
+
+                                    <div className="text-sm">
+                                        Side {page} / {totalPages}
+                                    </div>
+
+                                    <button
+                                        className="border border-gray-300 rounded-md px-3 py-1 disabled:opacity-50"
+                                        disabled={page === totalPages}
+                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    >
+                                        Næste
+                                    </button>
+                                </div>
+                            </div>
+
+
+                            <div className="border border-gray-200 rounded-xl backdrop-blur-xs overflow-hidden">
+                                <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 text-sm">
+                                    <div className="col-span-4">Filnavn</div>
+                                    <div className="col-span-2">Status</div>
+                                    <div className="col-span-3">Uploadet</div>
+                                    <div className="col-span-1 text-right">Længde</div>
+                                    <div className="col-span-2 text-right">Del</div>
+                                </div>
+
+                                {pagedVideos.map((v) => (
                                     <div
-                                        onClick={() => navigate(`/matches/${m.id}/overview`)}
-                                        key={m.id}
+                                        onClick={() => navigate(`/matches/${v.id}/overview`)}
+                                        key={v.id}
                                         className="grid grid-cols-12 gap-4 px-6 py-4
-                                        cursor-pointer hover:bg-gray-500 transition
+                                        cursor-pointer hover:bg-gray-900 transition
                                         border-b border-gray-100 items-center"
                                     >
-                                        <div className="col-span-5">
-                                            <div className="font-medium">{m.file_name}</div>
+                                        <div className="col-span-4">
+                                            <div className="font-medium">{v.file_name}</div>
                                         </div>
 
                                         <div className="col-span-2">
-                                            <span className={statusBadge(m.status)}>{m.status}</span>
+                                            <span className={statusBadge(v.status)}>{v.status}</span>
                                         </div>
 
                                         <div className="col-span-3">
-                                            {formatDate(m.upload_timestamp)}
+                                            {formatDate(v.upload_timestamp)}
                                         </div>
 
-                                        <div className="col-span-2 text-right">
-                                            {formatDuration(m.video_length)}
+                                        <div className="col-span-1 text-right">
+                                            {formatDuration(v.video_length)}
+                                        </div>
+
+                                        <div
+                                            className="col-span-2 text-right"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigator.clipboard.writeText(`/matches/${v.id}/overview`)
+                                                    .then(() => alert("Link kopieret!"));
+                                            }}
+                                        >
+                                            🔗
                                         </div>
                                     </div>
                                 ))}
                             </div>
+                            </>
                         )}
                     </div>
                 </div>
