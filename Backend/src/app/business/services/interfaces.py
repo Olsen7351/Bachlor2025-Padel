@@ -121,7 +121,7 @@ class IVideoService(ABC):
         pass
 
     @abstractmethod
-    async def get_player_analyzed_videos(self, player_id: str) -> List[Video]:
+    async def get_player_videos(self, player_id: str) -> List[Video]:
         """Get all analyzed videos for a specific player"""
         pass
 

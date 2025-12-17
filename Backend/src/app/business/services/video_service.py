@@ -199,9 +199,9 @@ class VideoService(IVideoService):
             print(f"Warning: Could not extract video duration: {str(e)}")
             return None
         
-    async def get_player_analyzed_videos(self, player_id: str) -> List[Video]:
+    async def get_player_videos(self, player_id: str) -> List[Video]:
         """
-        Get all analyzed videos for a specific player
+        Get all videos for a specific player
         Delegates to repository layer
         """
-        return await self._video_repository.get_analyzed_by_player_id(player_id)
+        return await self._video_repository.get_videos_by_player_id(player_id)
