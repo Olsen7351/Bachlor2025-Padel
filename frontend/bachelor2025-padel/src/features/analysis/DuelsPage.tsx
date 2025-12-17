@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import ParticleBackground from "../../globalComponents/ParticleBackground";
 import Animation from "../../globalComponents/Animation";
 import StatBar from "./StatsBar";
+import {apiFetch} from "../../utils/apiFetch.ts";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 interface RallyItem {
     rally_id: number;
@@ -55,8 +56,8 @@ const DuelsPage = () => {
                 };
 
                 const [aRes, dRes] = await Promise.all([
-                    fetch(`${API_BASE}/rallies/${videoId}/analysis`, { headers }),
-                    fetch(`${API_BASE}/rallies/${videoId}/distribution`, { headers }),
+                    apiFetch(`${API_BASE}/rallies/${videoId}/analysis`, { headers }),
+                    apiFetch(`${API_BASE}/rallies/${videoId}/distribution`, { headers }),
                 ]);
 
                 if (!aRes.ok) throw new Error(await aRes.text());

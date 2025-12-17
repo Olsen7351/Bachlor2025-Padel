@@ -2,8 +2,9 @@ import {useEffect, useMemo, useState} from "react";
 import {useParams} from "react-router-dom";
 import ParticleBackground from "../../globalComponents/ParticleBackground";
 import Animation from "../../globalComponents/Animation";
+import {apiFetch} from "../../utils/apiFetch.ts";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 type PlayerId = "player_1" | "player_2";
 
@@ -13,7 +14,7 @@ const PLAYER_LABELS: Record<string, "SPILLER 1" | "SPILLER 2"> = {
 };
 
 async function fetchHeatmapUrl(matchId: string, playerId: PlayerId): Promise<string> {
-    const res = await fetch(`${API_BASE}/heatmaps/matches/${matchId}/players/${playerId}/image`, {
+    const res = await apiFetch(`${API_BASE}/heatmaps/matches/${matchId}/players/${playerId}/image`, {
         headers: {
             Authorization: `Bearer ${localStorage.getItem("idToken")}`,
         },

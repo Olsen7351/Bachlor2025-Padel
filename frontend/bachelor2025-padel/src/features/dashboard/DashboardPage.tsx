@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ParticleBackground from "../../globalComponents/ParticleBackground.tsx";
 import Animation from "../../globalComponents/Animation.tsx";
+import {apiFetch} from "../../utils/apiFetch.ts";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 type Video = {
     id: string;
@@ -57,7 +58,7 @@ const DashboardPage = () =>{
             setError(null);
 
             try {
-                const res = await fetch(`${API_BASE}/videos/analyzed`, {
+                const res = await apiFetch(`${API_BASE}/videos/analyzed`, {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${idToken}`,
