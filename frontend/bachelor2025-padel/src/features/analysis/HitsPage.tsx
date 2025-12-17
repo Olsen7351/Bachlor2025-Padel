@@ -4,6 +4,7 @@ import StatBar from "./StatsBar.tsx";
 import ParticleBackground from "../../globalComponents/ParticleBackground.tsx";
 import Animation from "../../globalComponents/Animation.tsx";
 import {apiFetch} from "../../utils/apiFetch.ts";
+import BackArrow from "../../globalComponents/BackArrow.tsx";
 
 interface PlayerStats {
     player_identifier: string;
@@ -70,7 +71,9 @@ const HitsPage = () => {
         <>
             <ParticleBackground />
             <Animation>
-
+                <div className="absolute top-6 left-6 z-20">
+                    <BackArrow />
+                </div>
                 <div className="min-h-screen overflow-hidden flex flex-col justify-center px-10">
 
                 <h1 className="text-5xl font-bold text-center mb-10">

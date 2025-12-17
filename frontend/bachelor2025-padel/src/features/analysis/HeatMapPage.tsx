@@ -3,6 +3,7 @@ import {useParams} from "react-router-dom";
 import ParticleBackground from "../../globalComponents/ParticleBackground";
 import Animation from "../../globalComponents/Animation";
 import {apiFetch} from "../../utils/apiFetch.ts";
+import BackArrow from "../../globalComponents/BackArrow.tsx";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -84,6 +85,9 @@ const HeatmapPage = () => {
             <ParticleBackground />
 
             <Animation>
+                <div className="absolute top-6 left-6 z-20">
+                    <BackArrow />
+                </div>
                 <div className="relative z-10 min-h-screen flex flex-col justify-center px-10 py-16">
                     <h1 className="text-5xl font-bold text-center mb-10">HEATMAP</h1>
 

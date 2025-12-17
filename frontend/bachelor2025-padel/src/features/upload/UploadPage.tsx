@@ -4,6 +4,7 @@ import { ArrowUpOnSquareStackIcon } from "@heroicons/react/24/outline";
 import {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import {apiFetch} from "../../utils/apiFetch.ts";
+import BackArrow from "../../globalComponents/BackArrow.tsx";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -26,37 +27,10 @@ const UploadPage = () => {
         })
     }, []);
 
-    async function waitForMatchOverview(matchId: number) {
-        const intervalMs = 2 * 60_000;
-
-        while (true) {
-            let res: Response;
-
-            try {
-                res = await apiFetch(`${API_BASE}/matches/${matchId}/overview`);
-            } catch (e) {
-                throw e;
-            }
-
-            if (res.ok) {
-                return true;
-            }
-
-            if (res.status === 404 || res.status === 202) {
-                await new Promise((r) => setTimeout(r, intervalMs));
-                continue;
-            }
-
-            const text = await res.text().catch(() => "");
-            throw new Error(text || `Fejl under analyse (${res.status})`);
-        }
-    }
-
 
 
     async function handleAnalysis() {
         if (!file) return;
-
         setIsUploading(true);
         setError(null);
 
@@ -75,12 +49,8 @@ const UploadPage = () => {
                 throw new Error(`Upload fejlede: ${text}`);
             }
 
-            const upload = await res.json();
-            const videoId = upload.id as number;
-
-            await waitForMatchOverview(videoId);
-
-            navigate(`/matches/${videoId}/overview`);
+            alert("Analyse påbegyndt! Dette kan tage et godt stykke tid.")
+            navigate(`/dashboard`);
         } catch (e: any) {
             setError(e?.message ?? "Upload fejlede");
         } finally {
@@ -96,7 +66,11 @@ const UploadPage = () => {
                 <ParticleBackground />
 
                 <Animation>
+                    <div className="absolute top-6 left-6 z-20">
+                    <BackArrow />
+                    </div>
                     <div className="relative z-10 h-screen flex flex-col justify-center items-center">
+
                         <div className="flex flex-col gap-2 justify-center items-center mb-8">
                             <h1 className="text-6xl">Upload kamp</h1>
                             <h2 className="text-2xl">Kom i gang med at analysér din kamp</h2>
@@ -115,8 +89,8 @@ const UploadPage = () => {
                                 <input
                                     type="file"
                                     id="upload"
-                                    className="sr-only"
                                     disabled={isUploading}
+                                    className="sr-only"
                                     accept="video/mp4, video/mov, video/avi"
                                     onChange={(e) => {
                                         const f = e.target.files?.[0] ?? null;
@@ -153,11 +127,11 @@ const UploadPage = () => {
                                 className={
                                     !file
                                         ? "hidden"
-                                        : `hover:scale-110 text-2xl mt-6 rounded-md p-2 px-8 w-48 border border-gray-700 backdrop-blur-xs cursor-pointer transition
-                                        ${isUploading ? "cursor-none animate-bounce" : ""}`
+                                        : `hover:scale-110 text-2xl mt-6 rounded-md p-2 px-8 w-48 border 
+                                        border-gray-700 backdrop-blur-xs cursor-pointer transition`
                                 }
                             >
-                                {isUploading ? "Analyserer..." : "Vamos"}
+                                Vamos!
                             </button>
                         </div>
                     </div>
