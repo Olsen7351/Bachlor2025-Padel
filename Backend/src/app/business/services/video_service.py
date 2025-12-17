@@ -1,4 +1,4 @@
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Optional, List
 from pathlib import Path
 from datetime import datetime
 import tempfile
@@ -198,3 +198,10 @@ class VideoService(IVideoService):
         except Exception as e:
             print(f"Warning: Could not extract video duration: {str(e)}")
             return None
+        
+    async def get_player_analyzed_videos(self, player_id: str) -> List[Video]:
+        """
+        Get all analyzed videos for a specific player
+        Delegates to repository layer
+        """
+        return await self._video_repository.get_analyzed_by_player_id(player_id)

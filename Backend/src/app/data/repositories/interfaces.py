@@ -47,6 +47,12 @@ class IVideoRepository(BaseRepository[Video, VideoModel]):
         """Soft delete video (set is_deleted=True) - video-specific operation"""
         pass
 
+    @abstractmethod
+    async def get_analyzed_by_player_id(self, player_id: str) -> List[Video]:
+        """Get all analyzed videos uploaded by a specific player"""
+        pass
+    
+
 class IAnalysisRepository(BaseRepository[Analysis, AnalysisModel]):
     """
     Analysis-specific repository interface

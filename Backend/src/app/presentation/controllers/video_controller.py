@@ -14,7 +14,9 @@ from ...domain.player import Player
 from ..dtos.video_dto import (
     VideoUploadResponse,
     VideoErrorResponse,
-    VideoStatusDto
+    VideoStatusDto,
+    PlayerVideosResponse,
+    VideoSummaryDto
 )
 
 # DI container
@@ -172,6 +174,40 @@ async def upload_video(
                 "details": str(e)
             }
         )
+    
+
+@router.get(
+        "/analyzed",
+        response_model=PlayerVideosResponse,
+        status_code=status.HTTP_200_OK,
+        summary="Get player's analyzed videos"
+)
+async def get_player_analyzed_videos(
+    current_user: Player = Depends(get_current_user),
+    video_service: IVideoService = Depends(get_video_service)
+) -> PlayerVideosResponse:
+    """
+    Get all analyzed videos for the authenticated player.
+    """
+    videos = await video_service.get_player_analyzed_videos(
+        player_id=current_user.id
+    )
+
+    video_summaries = [
+        VideoSummaryDto(
+            id=video.id,
+            file_name=video.file_name,
+            status=VideoStatusDto(video.status.value),
+            upload_timestamp=video.upload_timestamp,
+            video_length=video.video_length
+        )
+        for video in videos
+    ]
+
+    return PlayerVideosResponse(
+        videos=video_summaries,
+        total_count=len(video_summaries)
+    )
 
 
 async def process_video_analysis(

@@ -120,6 +120,11 @@ class IVideoService(ABC):
         """Get the full path to a video file"""
         pass
 
+    @abstractmethod
+    async def get_player_analyzed_videos(self, player_id: str) -> List[Video]:
+        """Get all analyzed videos for a specific player"""
+        pass
+
 
 class IMatchService(ABC):
     """Interface for Match business operations"""
