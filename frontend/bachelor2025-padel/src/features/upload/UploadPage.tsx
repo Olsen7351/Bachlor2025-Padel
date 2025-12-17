@@ -19,9 +19,6 @@ const UploadPage = () => {
     useEffect(() => {
         apiFetch(`${API_BASE}/auth/me`, {
             method: "GET",
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("idToken")}`,
-            }
         }).then((res) => {
             if (res.status === 401) {
                 navigate("/");
@@ -30,29 +27,29 @@ const UploadPage = () => {
     }, []);
 
     async function waitForMatchOverview(matchId: number) {
-        const start = Date.now();
-        const timeoutMs = 30 * 60_000;
         const intervalMs = 2 * 60_000;
 
-        while (Date.now() - start < timeoutMs) {
-            const res = await apiFetch(`${API_BASE}/matches/${matchId}/overview`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("idToken")}`,
-                },
-            });
+        while (true) {
+            let res: Response;
 
-            if (res.ok) return true;
+            try {
+                res = await apiFetch(`${API_BASE}/matches/${matchId}/overview`);
+            } catch (e) {
+                throw e;
+            }
 
-            if (res.status === 404) {
+            if (res.ok) {
+                return true;
+            }
+
+            if (res.status === 404 || res.status === 202) {
                 await new Promise((r) => setTimeout(r, intervalMs));
                 continue;
             }
 
-            const text = await res.text();
+            const text = await res.text().catch(() => "");
             throw new Error(text || `Fejl under analyse (${res.status})`);
         }
-
-        throw new Error("Analysen tog for lang tid. Prøv igen senere.");
     }
 
 
@@ -71,9 +68,6 @@ const UploadPage = () => {
             const res = await apiFetch(`${API_BASE}/videos/upload`, {
                 method: "POST",
                 body: form,
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("idToken")}`,
-                },
             });
 
             if (!res.ok) {

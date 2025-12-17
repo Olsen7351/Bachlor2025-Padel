@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import Animation from "../../globalComponents/Animation.tsx";
 import {signInWithEmailAndPassword } from "firebase/auth";
 import {auth} from "../../../firebase/firebase.ts";
-import {apiFetch} from "../../utils/apiFetch.ts";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -24,7 +23,7 @@ const LoginPage = () => {
     }
 
     async function backendLogin(idToken: string) {
-        const res = await apiFetch(`${API_BASE}/auth/login`, {
+        const res = await fetch(`${API_BASE}/auth/login`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${idToken}`,

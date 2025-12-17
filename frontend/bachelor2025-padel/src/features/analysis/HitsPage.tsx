@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import StatBar from "./StatsBar.tsx";
 import ParticleBackground from "../../globalComponents/ParticleBackground.tsx";
 import Animation from "../../globalComponents/Animation.tsx";
+import {apiFetch} from "../../utils/apiFetch.ts";
 
 interface PlayerStats {
     player_identifier: string;
@@ -37,14 +38,7 @@ const HitsPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(
-                    `${API_BASE}/matches/${videoId}/overview`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem("idToken")}`,
-                        },
-                    }
-                );
+                const res = await apiFetch(`${API_BASE}/matches/${videoId}/overview`);
 
                 if (!res.ok) {
                     throw new Error(await res.text());
