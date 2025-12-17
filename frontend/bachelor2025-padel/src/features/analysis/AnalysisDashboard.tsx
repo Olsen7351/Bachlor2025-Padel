@@ -4,6 +4,7 @@ import {useNavigate} from "react-router-dom";
 import duelsPicture from "../../assets/duels.jpg"
 import hitsPicture from "../../assets/hits.png"
 import heatmapPicture from "../../assets/heatmap.png"
+import BackArrow from "../../globalComponents/BackArrow.tsx";
 
 const AnalysisDashboard = () => {
     const navigate = useNavigate();
@@ -11,14 +12,16 @@ const AnalysisDashboard = () => {
         <>
                 <ParticleBackground />
                 <Animation>
-
-                    <button className="z-30 absolute top-4 right-4 cursor-pointer border border-white rounded-xl p-3"
+                    <div className="flex justify-between items-center p-3">
+                        <BackArrow />
+                    <button className="cursor-pointer border border-white rounded-xl p-3"
                             onClick={() => navigate("/upload")}>
                         Upload ny kamp
                     </button>
+                    </div>
 
 
-                    <div className="relative min-h-screen overflow-hidden flex flex-col justify-center px-10">
+                    <div className="relative h-[calc(100vh-200px)] overflow-hidden flex flex-col justify-center px-10">
                         <div className="text-6xl text-center mb-10">
                             Hvad vil du udforske?
                         </div>
