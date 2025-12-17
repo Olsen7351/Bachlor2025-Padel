@@ -22,4 +22,5 @@ from .heatmap_utils import (
     get_court_blue_cmap,
     gaussian_blur_heatmap,
     save_heatmap_on_image, 
-    generate_heatmap)
+    generate_heatmap,
+    generate_zone_overlay)

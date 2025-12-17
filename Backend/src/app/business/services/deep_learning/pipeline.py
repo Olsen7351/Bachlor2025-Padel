@@ -24,6 +24,7 @@ from .utils import (
     get_output_paths,
     load_court_config,
     generate_heatmap,
+    generate_zone_overlay,
     parse_calib_points,
     build_homography,
     load_calib_csv
@@ -331,6 +332,24 @@ class PadelAnalysisPipeline:
             )
         except Exception as e:
             print(f"Warning: Could not generate heatmap: {e}")
+            
+        try:
+            generate_zone_overlay(
+                csv_path=self.output_paths['player_csv'],
+                court_img_path="C:/Users/swamp/GitHub/Bachlor2025-Padel/Backend/src/app/business/services/deep_learning/court_info/court.png",
+                out_png=self.output_paths['zones'],
+                players=players_filter,
+                min_conf=self.config.heatmap.min_confidence,
+                court_w=self.config.court.court_width,
+                court_h=self.config.court.court_height,
+                alpha=0.22,
+                font_size=18,
+                show_axes=self.config.heatmap.show_axes,
+                title="Zone occupancy"
+            )
+        except Exception as e:
+            print(f"Warning: Could not generate occupation zones: {e}")
+
     
     def _generate_combined_output(self) -> None:
         """Step 6: Generate Combined Output Video."""

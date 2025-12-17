@@ -26,6 +26,7 @@ def get_output_paths(input_video: str, output_dir: str = "output_videos") -> Dic
         'rally_csv': os.path.join(output_dir, f"{basename}_rallies.csv"),
         'player_csv': os.path.join(output_dir, f"{basename}_player_positions.csv"),
         'heatmap': os.path.join(output_dir, f"{basename}_heatmap.png"),
+        'zones': os.path.join(output_dir, f"{basename}_zones.png"),
         'court_frame': os.path.join(output_dir, f"{basename}_court_frame.png"),
         'shots_csv': os.path.join(output_dir, f"{basename}_shots.csv"),
     }

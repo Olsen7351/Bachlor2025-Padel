@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from .inference_utils import ensure_dir
+from matplotlib.patches import Rectangle
 
 def load_heatmap_points(csv_path, inplay_only=False, min_conf=None, players=None):
     df = pd.read_csv(csv_path)
@@ -87,5 +88,97 @@ def generate_heatmap(csv_path, court_img_path, out_png, bins_x=200, bins_y=100,
 
     cmap = get_court_blue_cmap()
     save_heatmap_on_image(Hsmooth, extent, img, out_png, title,
-                          cmap=cmap, heat_alpha=heat_alpha, show_axes=not show_axes)
+                          cmap=cmap, heat_alpha=heat_alpha, show_axes=show_axes)
     print(f"Saved heatmap: {out_png}")
+    
+def compute_zone_percents(df, court_w=20.0):
+    """
+    Returns: percentages array of length 3 for zones [defence, transition, offence]
+    """
+    sub = df[(df["x_m"] >= 0.0) & (df["x_m"] <= 10.0)].copy()
+    d = sub["x_m"].to_numpy()
+
+    if len(sub) == 0:
+        return np.array([0.0, 0.0, 0.0], dtype=float)
+
+    # 3 equal zones over 0..10
+    edges = np.array([0.0, 10.0/3.0, 6.0, 10.0], dtype=float)
+    # bins: [0,3.33), [3.33,6.0), [6.0,10]
+    z1 = np.sum((d >= edges[0]) & (d < edges[1]))
+    z2 = np.sum((d >= edges[1]) & (d < edges[2]))
+    z3 = np.sum((d >= edges[2]) & (d <= edges[3]))
+    counts = np.array([z1, z2, z3], dtype=float)
+    return counts / counts.sum() * 100.0
+    
+def generate_zone_overlay(csv_path, court_img_path, out_png,
+                          side="near", players=None, min_conf=None,
+                          court_w=20.0, court_h=10.0,
+                          alpha=0.22, font_size=18, show_axes=False,
+                          title="Zone occupancy"):
+    """
+    Overlays 3 zones + percentages onto a top-down court image.
+
+    Coordinate system for overlay:
+      x axis = court width  (0..court_h)
+      y axis = court length (0..court_w)
+    """
+    ensure_dir(out_png)
+
+    df = pd.read_csv(csv_path)
+    for col in ["x_m", "y_m"]:
+        if col not in df.columns:
+            raise ValueError("CSV must contain x_m and y_m for zone overlay.")
+
+    df = df.dropna(subset=["x_m", "y_m"])
+
+    if min_conf is not None and "confidence" in df.columns:
+        df = df[df["confidence"] >= min_conf]
+    if players:
+        df = df[df["track_id"].isin(players)]
+
+    img = plt.imread(court_img_path)
+
+    percs = compute_zone_percents(df, court_w=court_w)
+
+    extent = [0.0, court_h, 0.0, court_w]  # x=width, y=length
+    fig_w = 8
+    fig_h = fig_w * (court_w / court_h)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+
+    ax.imshow(img, origin="lower", extent=extent, aspect="auto")
+
+    zone_edges = [0.0, 10.0/3.0, 6.0, 10.0]
+    labels = ["Defence", "Transition", "Offence"]
+
+    def draw_half(y0, perc):
+        for i in range(3):
+            y_start = y0 + zone_edges[i]
+            y_end   = y0 + zone_edges[i+1]
+            rect = Rectangle((0.0, y_start), court_h, (y_end - y_start),
+                             linewidth=2, edgecolor="white",
+                             facecolor="white", alpha=alpha)
+            ax.add_patch(rect)
+            ax.text(court_h/2.0, (y_start + y_end)/2.0,
+                    f"{labels[i]}\n{perc[i]:.1f}%",
+                    ha="center", va="center",
+                    fontsize=font_size, weight="bold", color="black")
+
+    draw_half(0.0, percs)
+
+    ax.set_xlim(0, court_h)
+    ax.set_ylim(0, court_w)
+
+    if title:
+        ax.set_title(title)
+
+    if not show_axes:
+        ax.set_xticks([]); ax.set_yticks([])
+    else:
+        ax.set_xlabel("Court width (m)")
+        ax.set_ylabel("Court length (m)")
+
+    plt.tight_layout()
+    plt.savefig(out_png, dpi=200)
+    plt.close(fig)
+
+    print(f"Saved zone overlay: {out_png}")
