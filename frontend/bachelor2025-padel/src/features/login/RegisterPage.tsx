@@ -39,7 +39,7 @@ export default function RegisterPage() {
             );
 
             await updateProfile(cred.user, {
-                displayName: email.split("@")[0],
+                displayName: name,
             });
             navigate("/");
         } catch (e: any) {

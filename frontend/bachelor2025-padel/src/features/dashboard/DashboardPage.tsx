@@ -60,9 +60,6 @@ const DashboardPage = () =>{
             try {
                 const res = await apiFetch(`${API_BASE}/videos/analyzed`, {
                     method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${idToken}`,
-                    },
                 });
 
                 const data = await res.json().catch(() => null);

@@ -15,9 +15,6 @@ const PLAYER_LABELS: Record<string, "SPILLER 1" | "SPILLER 2"> = {
 
 async function fetchHeatmapUrl(matchId: string, playerId: PlayerId): Promise<string> {
     const res = await apiFetch(`${API_BASE}/heatmaps/matches/${matchId}/players/${playerId}/image`, {
-        headers: {
-            Authorization: `Bearer ${localStorage.getItem("idToken")}`,
-        },
     });
 
     if (!res.ok) {
