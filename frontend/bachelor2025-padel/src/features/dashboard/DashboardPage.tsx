@@ -79,7 +79,6 @@ const DashboardPage = () =>{
                 setVideos(sortedList);
                 setPage(1);
             } catch (e: any) {
-                if (e?.name === "AbortError") return;
                 setError(e?.message ?? "Noget gik galt ved hentning af kampe.");
                 setVideos([]);
             } finally {
@@ -99,6 +98,27 @@ const DashboardPage = () =>{
         if (["failed", "error"].includes(s)) return `${base} border-red-300`;
         return `${base} border-gray-300`;
     };
+
+    const handleDelete = async (videoId: string) => {
+        if (!window.confirm("Er du sikker på, at du vil slette denne kamp?")) return;
+
+        try {
+            const res = await apiFetch(`${API_BASE}/videos/${videoId}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                throw new Error(data?.detail ?? "Kunne ikke slette kampen");
+            }
+
+            window.location.reload();
+        } catch (e: any) {
+            setError(e?.message ?? "Noget gik galt ved sletning.");
+        }
+    };
+
+
 
     return (
         <div className="relative min-h-screen overflow-hidden">
@@ -186,7 +206,7 @@ const DashboardPage = () =>{
                                     <div className="col-span-2">Status</div>
                                     <div className="col-span-3">Uploadet</div>
                                     <div className="col-span-1 text-right">Længde</div>
-                                    <div className="col-span-2 text-right">Del</div>
+                                    <div className="col-span-2 text-right">Handlinger</div>
                                 </div>
 
                                 {pagedVideos.map((v) => (
@@ -214,8 +234,9 @@ const DashboardPage = () =>{
                                             {formatDuration(v.video_length)}
                                         </div>
 
+                                        <div className="col-span-2 text-right">
                                         <div
-                                            className={`${v.status !== "analyzed" ? "hidden" : ""} col-span-2 text-right`}
+                                            className={`${v.status !== "analyzed" ? "hidden" : ""} col-span-1 text-right`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 navigator.clipboard.writeText(`/matches/${v.id}/overview`)
@@ -223,6 +244,18 @@ const DashboardPage = () =>{
                                             }}
                                         >
                                             🔗
+                                        </div>
+
+                                            <div
+                                                className={`${v.status !== "analyzed" ? "hidden" : ""} col-span-1 text-right cursor-pointer`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(v.id).then();
+                                                }}
+                                            >
+                                                X
+                                            </div>
+
                                         </div>
                                     </div>
                                 ))}
