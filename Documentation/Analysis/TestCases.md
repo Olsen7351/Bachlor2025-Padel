@@ -147,12 +147,12 @@ Hver test case indeholder:
 | **Preconditions**                 | - Kampvideo analyseret.                                                                                                                                                  |
 | **Test Scenarie 1 (Happy Path)**  | **S1: Oversigt over dueller**<br>1. Naviger til "Duelanalyse".<br>2. Observer listen over dueller.                                                                       |
 | **Forventet Resultat 1**          | - Der vises en liste eller graf over dueller.<br>- Gennemsnitslængden (antal slag) vises.<br>- Det totale antal dueller virker realistisk i forhold til videoens længde. |
-| **Faktisk Resultat 1**            | <br><br><br>_(Skriv observationer her)_                                                                                                                                  |
-| **Status 1**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                     |
+| **Faktisk Resultat 1**            | Viser listen af dueller som forventet.                                                                                                                                   |
+| **Status 1**                      | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                     |
 | **Test Scenarie 2 (Logic Check)** | **S2: Detaljeret duel-info**<br>1. Sammenlign systemets data med manuel optælling af de første 3 dueller i videoen.                                                      |
 | **Forventet Resultat 2**          | - Antallet af slag i systemet matcher den manuelle optælling (+/- fejlmargin acceptabelt, men bør være præcist).                                                         |
-| **Faktisk Resultat 2**            | <br><br><br>_(Skriv observationer her)_                                                                                                                                  |
-| **Status 2**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                     |
+| **Faktisk Resultat 2**            | Viser listen af dueller.                                                                                                                                                 |
+| **Status 2**                      | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                     |
 
 ### P8 - TC-07: Filtrering af data pr. spiller - (IKKE IMPLEMENTERET)
 
