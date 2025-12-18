@@ -5,10 +5,6 @@ from pathlib import Path
 from ...domain.player import Player
 from ...domain.video import Video
 from ...domain.analysis import Analysis
-from .results.heatmap_results import (
-    PlayerHeatmapResult,
-    HeatmapComparisonResult
-)
 from .deep_learning.results import MLAnalysisResult
 
 class IAuthService(ABC):
@@ -169,40 +165,12 @@ class IHeatmapService(ABC):
     """Interface for Heatmap business operations"""
     
     @abstractmethod
-    async def get_player_heatmap(
-        self, 
-        match_id: int, 
-        player_identifier: str
-    ) -> PlayerHeatmapResult:
-        """
-        UC-02 S1: Get heatmap for a specific player in a match
-        
-        Returns:
-            PlayerHeatmapResponse with base64 encoded heatmap
-        """
-        pass
-    
-    @abstractmethod
     async def get_player_heatmap_raw(
         self, 
         match_id: int, 
         player_identifier: str
     ) -> bytes:
         """Get raw heatmap bytes for direct image response"""
-        pass
-    
-    @abstractmethod
-    async def get_heatmap_comparison(
-        self, 
-        match_id: int,
-        player_identifiers: Optional[List[str]] = None
-    ) -> HeatmapComparisonResult:
-        """UC-02 S2: Get multiple heatmaps for comparison"""
-        pass
-    
-    @abstractmethod
-    async def get_available_heatmap_players(self, match_id: int) -> List[str]:
-        """Get list of players who have heatmap data available"""
         pass
 
 
