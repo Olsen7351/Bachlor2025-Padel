@@ -205,3 +205,11 @@ class VideoService(IVideoService):
         Delegates to repository layer
         """
         return await self._video_repository.get_videos_by_player_id(player_id)
+    
+    async def get_video_for_player(self, video_id: int, player_id: str) -> Optional[Video]:
+        """
+        Get a video only if it belongs to the specified player
+        Used for authorization checks before operations.
+        """
+        player_videos = await self._video_repository.get_videos_by_player_id(player_id)
+        return next((v for v in player_videos if v.id == video_id), None)

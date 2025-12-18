@@ -125,6 +125,11 @@ class IVideoService(ABC):
         """Get all analyzed videos for a specific player"""
         pass
 
+    @abstractmethod
+    async def get_video_for_player(self, video_id: int, player_id: str) -> Optional[Video]:
+        """Get a video only if it belongs to the specified player"""
+        pass
+
 
 class IMatchService(ABC):
     """Interface for Match business operations"""
