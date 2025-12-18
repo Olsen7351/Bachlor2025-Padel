@@ -1,1 +1,0 @@
-from .heatmap_results import PlayerHeatmapResult, HeatmapDataResult, HeatmapComparisonResult
