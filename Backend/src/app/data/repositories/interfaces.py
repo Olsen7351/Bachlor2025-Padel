@@ -49,7 +49,7 @@ class IVideoRepository(BaseRepository[Video, VideoModel]):
 
     @abstractmethod
     async def get_videos_by_player_id(self, player_id: str) -> List[Video]:
-        """Get all analyzed videos uploaded by a specific player"""
+        """Get all videos uploaded by a specific player"""
         pass
     
 

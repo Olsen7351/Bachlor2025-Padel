@@ -209,6 +209,59 @@ async def get_player_videos(
         total_count=len(video_summaries)
     )
 
+@router.delete(
+        "/{video_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+        responses={
+            404: {"model": VideoErrorResponse, "description": "Video not found"},
+            500: {"model": VideoErrorResponse, "description": "Server error"}
+        },
+        summary="Delete a video",
+        description="Soft delete a video. The video must belong to the authenticated Player."
+)
+async def delete_video(
+    video_id: int,
+    current_user: Player = Depends(get_current_user),
+    video_service: IVideoService = Depends(get_video_service),
+    session: AsyncSession = Depends(get_db_session)
+) -> None:
+    """
+    Soft delete a video owned by the current user.
+    
+    The video is marked as deleted but remains in storage
+    for later cleanup by a separate service.
+    """
+    # Verify ownership - returns None if video doesn't exist or doesn't belong to user
+    video = await video_service.get_video_for_player(
+        video_id=video_id,
+        player_id=current_user.id
+    )
+    
+    if video is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found"
+        )
+    
+    try:
+        deleted = await video_service.delete_video(video_id)
+        
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Video not found"
+            )
+        
+        await session.commit()
+        # 204 No Content - no return body needed
+        
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "Failed to delete video", "details": str(e)}
+        )
+
 
 async def process_video_analysis(
     video_id: int, 
