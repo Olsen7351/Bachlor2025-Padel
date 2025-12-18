@@ -10,7 +10,7 @@ _Dette dokument beskriver test cases for systemets use cases. Testene er priorit
     - [P2 - TC-00: Player-login](#p2---tc-00-player-login)
     - [P3 - TC-01: Upload og behandling af kampvideo](#p3---tc-01-upload-og-behandling-af-kampvideo)
     - [P4 - TC-04: Opgørelse af samlet antal slag](#p4---tc-04-opgørelse-af-samlet-antal-slag)
-    - [P5 - TC-03: Analyse af banezone-besættelse](#p5---tc-03-analyse-af-banezone-besættelse)
+    - [P5 - TC-03: Analyse af banezone-besættelse - (IKKE IMPLEMENTERET)](#p5---tc-03-analyse-af-banezone-besættelse)
     - [P6 - TC-02: Visning af spiller-heatmaps](#p6---tc-02-visning-af-spiller-heatmaps)
     - [P7 - TC-08: Analyse af duel-længde (rallies)](#p7---tc-08-analyse-af-duel-længde-rallies)
     - [P8 - TC-07: Filtrering af data pr. spiller - (IKKE IMPLEMENTERET)](#p8---tc-07-filtrering-af-data-pr-spiller---ikke-implementeret)
@@ -45,12 +45,12 @@ Hver test case indeholder:
 | **Preconditions**                | - Applikationen kører.<br>- Test-brugeren eksisterer ikke i forvejen i hverken Firebase eller database.                                                                                                                     |
 | **Test Scenarie 1 (Happy Path)** | **S1: Succesfuld oprettelse**<br>1. Naviger til registreringssiden.<br>2. Indtast navn: "Test Bruger".<br>3. Indtast email: "nybruger@test.dk".<br>4. Indtast password: "SikkertPassword123".<br>5. Klik på "Registrer".    |
 | **Forventet Resultat 1**         | - Brugeren oprettes i Firebase Authentication.<br>- Brugeren gemmes i backend-databasen med korrekt navn og rolle.<br>- Brugeren viderestilles automatisk til Dashboardet.<br>- Ingen fejlmeddelelser vises.                |
-| **Faktisk Resultat 1**           | <br><br><br>_(Skriv observationer her)_                                                                                                                                                                                     |
-| **Status 1**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                                                        |
+| **Faktisk Resultat 1**           | Brugeren bliver succesfuldt oprettet i Firebase og viderestilles til login-siden, hvor brugeren derefter skal logge ind.                                                                                                    |
+| **Status 1**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** _(Note: Redirect går til login i stedet for dashboard)_                                                                                                                |
 | **Test Scenarie 2 (Negative)**   | **F3: E-mail allerede i brug**<br>1. Naviger til registreringssiden.<br>2. Indtast en email, der allerede findes i systemet (f.eks. "eksisterende@test.dk").<br>3. Udfyld øvrige felter gyldigt.<br>4. Klik på "Registrer". |
 | **Forventet Resultat 2**         | - Registreringen afvises.<br>- En fejlmeddelelse vises: "E-mail er allerede i brug".<br>- Ingen ny bruger oprettes i databasen.                                                                                             |
-| **Faktisk Resultat 2**           | <br><br><br>_(Skriv observationer her)_                                                                                                                                                                                     |
-| **Status 2**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                                                        |
+| **Faktisk Resultat 2**           | Afviser succesfuldt at oprette bruger med samme email.                                                                                                                                                                      |
+| **Status 2**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                                                        |
 
 ### P2 - TC-00: Player-login
 
@@ -62,12 +62,12 @@ Hver test case indeholder:
 | **Preconditions**                | - En bruger med email "bruger@test.dk" og password "Password123" er oprettet og registreret i backend.                                                                |
 | **Test Scenarie 1 (Happy Path)** | **S1: Korrekt login**<br>1. Naviger til login-siden.<br>2. Indtast email: "bruger@test.dk".<br>3. Indtast password: "Password123".<br>4. Klik på "Log ind".           |
 | **Forventet Resultat 1**         | - Systemet modtager et gyldigt token fra Firebase.<br>- Backend accepterer tokenet.<br>- Brugeren viderestilles til Dashboardet.                                      |
-| **Faktisk Resultat 1**           | <br><br><br>_(Skriv observationer her)_                                                                                                                               |
-| **Status 1**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                  |
+| **Faktisk Resultat 1**           | Bruger bliver logget ind og backend accepterer token.                                                                                                                 |
+| **Status 1**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                  |
 | **Test Scenarie 2 (Negative)**   | **F1: Forkert adgangskode**<br>1. Naviger til login-siden.<br>2. Indtast email: "bruger@test.dk".<br>3. Indtast password: "ForkertPassword".<br>4. Klik på "Log ind". |
 | **Forventet Resultat 2**         | - Login afvises.<br>- Fejlmeddelelse vises: "Forkert brugernavn eller adgangskode".<br>- Brugeren forbliver på login-siden.                                           |
-| **Faktisk Resultat 2**           | <br><br><br>_(Skriv observationer her)_                                                                                                                               |
-| **Status 2**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                  |
+| **Faktisk Resultat 2**           | Login afvises succesfuldt.                                                                                                                                            |
+| **Status 2**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                  |
 
 ### P3 - TC-01: Upload og behandling af kampvideo
 
@@ -79,12 +79,12 @@ Hver test case indeholder:
 | **Preconditions**                | - Brugeren er logget ind.<br>- Der haves en gyldig .mp4 fil (padel_kamp.mp4) og en ugyldig .txt fil.                                                |
 | **Test Scenarie 1 (Happy Path)** | **S1: Vellykket upload**<br>1. Naviger til "Upload Video".<br>2. Vælg filen "padel_kamp.mp4".<br>3. Klik på "Upload".                               |
 | **Forventet Resultat 1**         | - Systemet viser en progress bar.<br>- Efter upload vises beskeden "Upload gennemført".<br>- Videoens status skifter til "Analyserer" eller "I kø". |
-| **Faktisk Resultat 1**           | <br><br><br>_(Skriv observationer her)_                                                                                                             |
-| **Status 1**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                |
+| **Faktisk Resultat 1**           | Virker som forventet.                                                                                                                               |
+| **Status 1**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                |
 | **Test Scenarie 2 (Negative)**   | **F1: Filformat ikke understøttet**<br>1. Naviger til "Upload Video".<br>2. Vælg filen "noter.txt".<br>3. Forsøg at uploade.                        |
 | **Forventet Resultat 2**         | - Systemet afviser filen straks.<br>- Fejlmeddelelse vises: "Ugyldigt filformat. Kun videofiler understøttes".                                      |
-| **Faktisk Resultat 2**           | <br><br><br>_(Skriv observationer her)_                                                                                                             |
-| **Status 2**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                |
+| **Faktisk Resultat 2**           | Korrekt afviser ugyldigt filformat.                                                                                                                 |
+| **Status 2**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                |
 
 ### P4 - TC-04: Opgørelse af samlet antal slag
 
@@ -96,14 +96,14 @@ Hver test case indeholder:
 | **Preconditions**                     | - En video er uploadet og færdiganalyseret.<br>- Testdata: Analyse viser Spiller A har 45 slag, Spiller B har 50 slag.                                 |
 | **Test Scenarie 1 (Happy Path)**      | **S1: Visning af slag-statistik**<br>1. Naviger til den analyserede kamps detaljeside.<br>2. Find sektionen "Nøglestatistikker" eller "Slagfordeling". |
 | **Forventet Resultat 1**              | - Listen viser navnene på spillerne.<br>- Ud for Spiller A står "45 slag".<br>- Ud for Spiller B står "50 slag".                                       |
-| **Faktisk Resultat 1**                | <br><br><br>_(Skriv observationer her)_                                                                                                                |
-| **Status 1**                          | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                   |
+| **Faktisk Resultat 1**                | Virker som forventet.                                                                                                                                  |
+| **Status 1**                          | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                   |
 | **Test Scenarie 2 (Data Validation)** | **S2: Grafisk visning**<br>1. Kontroller søjlediagrammet for "Total Shots".                                                                            |
 | **Forventet Resultat 2**              | - Søjlen for Spiller B skal være visuelt højere end for Spiller A.<br>- Værdierne matcher tabellen.                                                    |
-| **Faktisk Resultat 2**                | <br><br><br>_(Skriv observationer her)_                                                                                                                |
-| **Status 2**                          | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                   |
+| **Faktisk Resultat 2**                | Viser en liste med tal og distribution.                                                                                                                |
+| **Status 2**                          | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                   |
 
-### P5 - TC-03: Analyse af banezone-besættelse
+### P5 - TC-03: Analyse af banezone-besættelse - (IKKE IMPLEMENTERET)
 
 | Test Case Element                | Detaljer                                                                                                                                                                                  |
 | :------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -113,12 +113,12 @@ Hver test case indeholder:
 | **Preconditions**                | - En video er færdiganalyseret.                                                                                                                                                           |
 | **Test Scenarie 1 (Happy Path)** | **S1: Visning af zonefordeling**<br>1. Naviger til fanen "Zoneanalyse" for en specifik kamp.<br>2. Aflæs værdierne for en spiller (f.eks. Defensiv: 60%, Transition: 10%, Offensiv: 30%). |
 | **Forventet Resultat 1**         | - De tre procenttal skal tilsammen give 100%.<br>- Grafikken (f.eks. cirkeldiagram eller bar) skal afspejle fordelingen visuelt.                                                          |
-| **Faktisk Resultat 1**           | <br><br><br>_(Skriv observationer her)_                                                                                                                                                   |
-| **Status 1**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                      |
+| **Faktisk Resultat 1**           | Ikke implementeret.                                                                                                                                                                       |
+| **Status 1**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** &nbsp;&nbsp;&nbsp;&nbsp; ☑ **Ikke testet**                                                                                           |
 | **Test Scenarie 2 (Empty Data)** | **F2: Utilstrækkelige data**<br>1. Upload en meget kort video (f.eks. 2 sekunder) hvor spilleren er ude af billedet.<br>2. Vent på analyse.<br>3. Gå til Zoneanalyse.                     |
 | **Forventet Resultat 2**         | - Systemet bør vise "Ingen data tilgængelig" eller "Utilstrækkelig sporing" i stedet for et tomt diagram eller 0%.                                                                        |
-| **Faktisk Resultat 2**           | <br><br><br>_(Skriv observationer her)_                                                                                                                                                   |
-| **Status 2**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                      |
+| **Faktisk Resultat 2**           | Ikke implementeret.                                                                                                                                                                       |
+| **Status 2**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** &nbsp;&nbsp;&nbsp;&nbsp; ☑ **Ikke testet**                                                                                           |
 
 ### P6 - TC-02: Visning af spiller-heatmaps
 
@@ -130,12 +130,12 @@ Hver test case indeholder:
 | **Preconditions**                 | - En video er færdiganalyseret.                                                                                                                                                             |
 | **Test Scenarie 1 (Happy Path)**  | **S1: Generering af heatmap**<br>1. Naviger til "Heatmap"-visningen.<br>2. Vælg "Spiller A".                                                                                                |
 | **Forventet Resultat 1**          | - Et 2D-kort af banen vises.<br>- Et farvet lag (heatmap) vises ovenpå.<br>- Områder med høj aktivitet (f.eks. baglinjen) er røde/varme.<br>- Områder uden aktivitet er transparente/kolde. |
-| **Faktisk Resultat 1**            | <br><br><br>_(Skriv observationer her)_                                                                                                                                                     |
-| **Status 1**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                        |
+| **Faktisk Resultat 1**            | Viser "Spiller 1" og "Spiller 2" i stedet for "Spiller A" og "Spiller B".                                                                                                                   |
+| **Status 1**                      | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** _(Note: Navngivning afviger fra forventet)_                                                                                            |
 | **Test Scenarie 2 (Interaction)** | **S2: Skift af spiller**<br>1. Skift valg fra "Spiller A" til "Spiller B".                                                                                                                  |
 | **Forventet Resultat 2**          | - Heatmap-laget opdateres øjeblikkeligt til at vise Spiller B's mønster.<br>- Mønsteret skal være synligt forskelligt fra Spiller A (medmindre de har spillet identisk).                    |
-| **Faktisk Resultat 2**            | <br><br><br>_(Skriv observationer her)_                                                                                                                                                     |
-| **Status 2**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                        |
+| **Faktisk Resultat 2**            | Viser allerede begge heatmaps samtidigt.                                                                                                                                                    |
+| **Status 2**                      | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** _(Note: Begge heatmaps vises samlet i stedet for enkeltvis)_                                                                           |
 
 ### P7 - TC-08: Analyse af duel-længde (rallies)
 
@@ -164,12 +164,12 @@ Hver test case indeholder:
 | **Preconditions**                 | - Analyse side åben med data for alle 4 spillere.                                                                                      |
 | **Test Scenarie 1 (Happy Path)**  | **S1: Single-player filter**<br>1. Find filter-menuen (typisk "Vælg Spillere").<br>2. Fjern markeringen ved alle undtagen "Spiller A". |
 | **Forventet Resultat 1**          | - Grafer og tabeller opdateres.<br>- Kun data for Spiller A vises.<br>- Heatmap viser kun Spiller A's positioner.                      |
-| **Faktisk Resultat 1**            | <br><br><br>_(Skriv observationer her)_                                                                                                |
-| **Status 1**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                   |
+| **Faktisk Resultat 1**            | Ikke implementeret.                                                                                                                    |
+| **Status 1**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** &nbsp;&nbsp;&nbsp;&nbsp; ☑ **Ikke testet**                                        |
 | **Test Scenarie 2 (Persistence)** | **S3: Vedvarende filter**<br>1. Behold filteret på "Spiller A".<br>2. Naviger fra "Heatmap" til "Slagpositioner".                      |
 | **Forventet Resultat 2**          | - "Slagpositioner"-siden indlæses.<br>- Filteret er stadig aktivt (kun Spiller A vises).                                               |
-| **Faktisk Resultat 2**            | <br><br><br>_(Skriv observationer her)_                                                                                                |
-| **Status 2**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                   |
+| **Faktisk Resultat 2**            | Ikke implementeret.                                                                                                                    |
+| **Status 2**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** &nbsp;&nbsp;&nbsp;&nbsp; ☑ **Ikke testet**                                        |
 
 ### P9 - TC-06: Kamp-dashboard
 
@@ -181,12 +181,12 @@ Hver test case indeholder:
 | **Preconditions**                | - Kamp færdiganalyseret.                                                                                                                                                                                             |
 | **Test Scenarie 1 (Happy Path)** | **S1: Dashboard load**<br>1. Åbn kampen fra hovedmenuen.                                                                                                                                                             |
 | **Forventet Resultat 1**         | - Dashboardet indlæses inden for 3 sekunder (NFR-Y2).<br>- Følgende widgets er synlige: Total Slag, Zonefordeling (pie chart), Mini-heatmap, Duel-statstik.<br>- Ingen widgets viser "Error" eller loader uendeligt. |
-| **Faktisk Resultat 1**           | <br><br><br>_(Skriv observationer her)_                                                                                                                                                                              |
-| **Status 1**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                                                 |
+| **Faktisk Resultat 1**           | Virker og viser hvad der forventes.                                                                                                                                                                                  |
+| **Status 1**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                                                 |
 | **Test Scenarie 2 (Navigation)** | **S2: Drill-down**<br>1. Klik på widgetten "Zonefordeling".                                                                                                                                                          |
 | **Forventet Resultat 2**         | - Systemet navigerer til den detaljerede side for Zoneanalyse (UC-03).                                                                                                                                               |
-| **Faktisk Resultat 2**           | <br><br><br>_(Skriv observationer her)_                                                                                                                                                                              |
-| **Status 2**                     | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                                                 |
+| **Faktisk Resultat 2**           | Virker for andre tabs. Zoneanalyse er ikke implementeret.                                                                                                                                                            |
+| **Status 2**                     | ☑ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** _(Note: Zoneanalyse ikke implementeret)_                                                                                                                        |
 
 ### P10 - TC-05: Visualisering af slagpositioner - (IKKE IMPLEMENTERET)
 
@@ -198,9 +198,9 @@ Hver test case indeholder:
 | **Preconditions**                 | - Kamp analyseret.                                                                                                                                                                     |
 | **Test Scenarie 1 (Happy Path)**  | **S1: Kortlægning af slag**<br>1. Naviger til "Slagpositioner".<br>2. Vælg "Alle spillere".                                                                                            |
 | **Forventet Resultat 1**          | - Banekortet vises fyldt med punkter (prikker).<br>- Prikkerne har forskellige farver svarende til de forskellige spillere.<br>- Prikkernes placering virker logisk (inden for banen). |
-| **Faktisk Resultat 1**            | <br><br><br>_(Skriv observationer her)_                                                                                                                                                |
-| **Status 1**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                   |
+| **Faktisk Resultat 1**            | Ikke implementeret.                                                                                                                                                                    |
+| **Status 1**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** &nbsp;&nbsp;&nbsp;&nbsp; ☑ **Ikke testet**                                                                                        |
 | **Test Scenarie 2 (Interaction)** | **S3: Point-udfald**<br>1. Aktiver toggle "Vis vinder/taber slag".                                                                                                                     |
 | **Forventet Resultat 2**          | - Prikkernes farver skifter (f.eks. Grøn for vinderslag, Rød for fejl).                                                                                                                |
-| **Faktisk Resultat 2**            | <br><br><br>_(Skriv observationer her)_                                                                                                                                                |
-| **Status 2**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet**                                                                                                                                   |
+| **Faktisk Resultat 2**            | Ikke implementeret.                                                                                                                                                                    |
+| **Status 2**                      | ▢ **Godkendt** &nbsp;&nbsp;&nbsp;&nbsp; ▢ **Fejlet** &nbsp;&nbsp;&nbsp;&nbsp; ☑ **Ikke testet**                                                                                        |
