@@ -126,11 +126,9 @@ class VideoService(IVideoService):
                 filename = f"{Path(filename).stem}_converted.mp4"
             
             # Read the final file for storage
-            with open(final_path, 'rb') as f:
-                file_content = f
-                
+            with open(final_path, 'rb') as f:                
                 # Store file
-                storage_path, stored_filename = await self._file_storage.save_video(
+                storage_path, _ = await self._file_storage.save_video(
                     f, filename, player_id
                 )
             
